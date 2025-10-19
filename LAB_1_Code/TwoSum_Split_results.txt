@@ -1,0 +1,189 @@
+TwoSum_Split_test
+========================================================================
+TwoSum and Split Algorithms Test Suite
+Error-Free Transformations for Addition and Splitting
+========================================================================
+
+Machine epsilon (eps): 2.2204e-16
+Unit roundoff (u):     1.1102e-16
+
+========================================================================
+PART 1: TwoSum Algorithm (Algorithm 1.2)
+========================================================================
+
+Key difference from FastTwoSum:
+  - NO precondition required (works for ANY a, b)
+  - Cost: 6 flops (vs 3 for FastTwoSum)
+
+Test 1.1: Exactness - Verify a + b = x + y
+--------------------------------------------------------------------
+  a                  b                  |a+b - (x+y)|   Exact?
+--------------------------------------------------------------------
+  1.0000e+00     1.1102e-16     0.0000e+00       ✓
+  1.0000e+00     1.0000e-10     0.0000e+00       ✓
+  1.0000e+10     1.0000e+00     0.0000e+00       ✓
+  1.0000e+00     2.2204e-16     0.0000e+00       ✓
+  1.0000e+02     1.0000e-14     0.0000e+00       ✓
+
+✓ Test 1.1 PASSED: All cases exact
+
+Test 1.2: NO Precondition - Works even when |a| < |b|
+--------------------------------------------------------------------
+Compare TwoSum vs FastTwoSum when |a| < |b|
+
+Test case: a = 1.0000e+00, b = 1.0000e+10 (|a| < |b|)
+
+TwoSum result:
+  x = 1.0000000001000000e+10
+  y = 0.0000000000000000e+00
+  |a+b - (x+y)| = 0.0000e+00  ✓ EXACT
+
+FastTwoSum result (precondition VIOLATED):
+  x = 1.0000000001000000e+10
+  y = 0.0000000000000000e+00
+  |a+b - (x+y)| = 0.0000e+00  (may work by coincidence)
+
+✓ TwoSum advantage: Works regardless of magnitude ordering
+
+Test 1.3: Error Bound - Verify |y| <= u|x|
+--------------------------------------------------------------------
+  a              b              |y|          u|x|         |y|/(u|x|)  OK?
+-------------------------------------------------------------------------------
+  1.0000e+00   2.2204e-16   0.0000e+00   1.1102e-16   0.000000   ✓
+  1.0000e+00   1.1102e-16   1.1102e-16   1.1102e-16   1.000000   ✓
+  1.0000e+02   1.0000e-14   4.2109e-15   1.1102e-14   0.379280   ✓
+  1.0000e+05   1.0000e-10   1.8634e-12   1.1102e-11   0.167841   ✓
+  1.0000e-01   1.0000e+00   8.3267e-17   1.2212e-16   0.681818   ✓
+
+✓ Test 1.3 PASSED: Error bound satisfied
+
+Test 1.4: Performance Comparison
+--------------------------------------------------------------------
+When precondition |a| >= |b| is satisfied:
+  TwoSum:     x = 1.0000000001000000e+10, y = 0.0000000000000000e+00
+  FastTwoSum: x = 1.0000000001000000e+10, y = 0.0000000000000000e+00
+  Results identical: ✓
+
+Cost comparison:
+  FastTwoSum: 3 flops (requires |a| >= |b|)
+  TwoSum:     6 flops (no precondition)
+  Trade-off: 2x cost for flexibility
+
+========================================================================
+PART 2: Split Algorithm (Algorithm 1.3)
+========================================================================
+
+Purpose: Split a floating-point number into two non-overlapping parts
+Used in: TwoProduct algorithm for error-free multiplication
+For double precision: s = 27, factor = 2^27 + 1 = 134217729
+
+Test 2.1: Exactness - Verify a = x + y
+--------------------------------------------------------------------
+  a                  x                  y                  |a-(x+y)|    Exact?
+---------------------------------------------------------------------------------
+  1.0000000000e+00   1.0000000000e+00   0.0000000000e+00   0.0000e+00   ✓
+  3.1415926536e+00   3.1415926814e+00   -2.7818135351e-08   0.0000e+00   ✓
+  1.0000000000e+10   1.0000000000e+10   0.0000000000e+00   0.0000e+00   ✓
+  2.2204460493e-16   2.2204460493e-16   0.0000000000e+00   0.0000e+00   ✓
+  1.0000000000e-01   9.9999999627e-02   3.7252903540e-10   0.0000e+00   ✓
+  3.3333333333e-01   3.3333333582e-01   -2.4835268841e-09   0.0000e+00   ✓
+  1.0000000000e-10   9.9999999600e-11   3.9958028362e-19   0.0000e+00   ✓
+  1.2345678900e+04   1.2345678955e+04   -5.5078124205e-05   0.0000e+00   ✓
+
+✓ Test 2.1 PASSED: All splits exact
+
+Test 2.2: Non-Overlapping Property
+--------------------------------------------------------------------
+The parts x and y should have no overlapping bits
+This means: |y| should be much smaller than ulp(x)
+
+  a              x              y              |y|/ulp(x)
+------------------------------------------------------------------
+  1.000000e+00   1.000000e+00   0.000000e+00   0.000000
+  3.141593e+00   3.141593e+00   -2.781814e-08   62640872.000000
+  1.234568e+04   1.234568e+04   -5.507812e-05   30279519.000000
+  1.000000e+10   1.000000e+10   0.000000e+00   0.000000
+
+Note: Non-overlapping means the low bits of x and high bits of y
+do not share the same significance. This is guaranteed by the
+factor = 2^27 + 1 construction.
+
+Test 2.3: Magnitude Relationship - Verify |y| <= |x|
+--------------------------------------------------------------------
+  a              |x|            |y|            |y|/|x|      OK?
+------------------------------------------------------------------
+  1.000000e+00   1.000000e+00   0.000000e+00   0.000000   ✓
+  3.141593e+00   3.141593e+00   2.781814e-08   0.000000   ✓
+  1.000000e-01   1.000000e-01   3.725290e-10   0.000000   ✓
+  1.000000e+10   1.000000e+10   0.000000e+00   0.000000   ✓
+  1.000000e-10   1.000000e-10   3.995803e-19   0.000000   ✓
+  1.234568e+04   1.234568e+04   5.507812e-05   0.000000   ✓
+
+✓ Test 2.3 PASSED: |y| <= |x| for all cases
+
+Test 2.4: Understanding the Split Mechanism
+--------------------------------------------------------------------
+Demonstrating split of π = 3.1415926535897931e+00
+
+High part (x): 3.1415926814079285e+00
+Low part  (y): -2.7818135350798912e-08
+Sum (x+y):     3.1415926535897931e+00
+Difference:    0.0000e+00
+
+Conceptually:
+  x contains the high-order ~27 bits of the mantissa
+  y contains the low-order  ~26 bits of the mantissa
+  Together they represent all 53 bits exactly
+
+Test 2.5: Split Used in TwoProduct Context
+--------------------------------------------------------------------
+Split is the key building block for error-free multiplication
+
+Computing a * b where:
+  a = 1.0000000000000002e+00
+  b = 1.0000000000000000e+00
+
+After splitting:
+  a = a1 + a2 = 1.0000000000000000e+00 + 2.2204460492503131e-16
+  b = b1 + b2 = 1.0000000000000000e+00 + 0.0000000000000000e+00
+
+Product x = a * b = 1.0000000000000002e+00
+The split allows exact computation of the rounding error
+by evaluating: a1*b1, a1*b2, a2*b1, a2*b2 separately
+
+Test 2.6: Edge Cases
+--------------------------------------------------------------------
+  Case            a              x              y              a-(x+y)
+-------------------------------------------------------------------------------
+  Zero            0.000000e+00   0.000000e+00   0.000000e+00   0.0000e+00
+  One             1.000000e+00   1.000000e+00   0.000000e+00   0.0000e+00
+  Power of 2      1.024000e+03   1.024000e+03   0.000000e+00   0.0000e+00
+  Very small      2.220446e-16   2.220446e-16   0.000000e+00   0.0000e+00
+  Very large      1.000000e+100   1.000000e+100   -7.883792e+91   0.0000e+00
+  Negative        -1.234560e+02   -1.234560e+02   -6.256104e-07   0.0000e+00
+
+========================================================================
+Summary of Results
+========================================================================
+
+TwoSum Algorithm:
+  ✓ Exactness: a + b = x + y for all test cases
+  ✓ Error bound: |y| <= u|x| satisfied
+  ✓ No precondition: Works for any a, b (unlike FastTwoSum)
+  ✓ Cost: 6 flops (2x FastTwoSum, but more flexible)
+  ✓ Use case: When order of operands unknown or |a| ≈ |b|
+
+Split Algorithm:
+  ✓ Exactness: a = x + y for all test cases
+  ✓ Non-overlapping: x and y share no common bit positions
+  ✓ Magnitude: |y| <= |x| always satisfied
+  ✓ Purpose: Foundation for TwoProduct (error-free multiplication)
+  ✓ Mechanism: factor = 2^27 + 1 splits 53-bit mantissa
+
+Key Insights:
+  1. TwoSum trades efficiency (6 flops) for flexibility (no precondition)
+  2. FastTwoSum is faster (3 flops) but requires |a| >= |b|
+  3. Split enables exact multiplication error computation
+  4. These EFTs are the foundation for compensated algorithms
+========================================================================
+diary TwoProduct_results.txt

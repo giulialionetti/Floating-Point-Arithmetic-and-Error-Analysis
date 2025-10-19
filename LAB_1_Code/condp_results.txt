@@ -1,0 +1,547 @@
+condp_test
+========================================================================
+Condition Number Tests
+Understanding Problem Sensitivity
+========================================================================
+
+Unit roundoff (u): 1.1102e-16
+
+Test 1: Well-Conditioned Polynomials
+--------------------------------------------------------------------
+These should have condition numbers near 1
+
+Polynomial                    x      cond(p,x)   Status
+------------------------------------------------------------
+p(x) = 1                      1.0    1.0000e+00  Excellent
+p(x) = x                      1.0    1.0000e+00  Excellent
+p(x) = 1 + x                  0.5    1.0000e+00  Excellent
+p(x) = 1 + x + x^2            0.5    1.0000e+00  Excellent
+p(x) = 1 + x + x^2 + x^3      0.5    1.0000e+00  Excellent
+
+Test 2: How Evaluation Point Affects Conditioning
+--------------------------------------------------------------------
+p(x) = (x-1)^5 evaluated at different points
+
+   x    | p(x)      | cond(p,x)  | Interpretation
+--------|-----------|------------|---------------------------
+ 0.5    | -3.125e-02 | 2.430e+02 | Acceptable
+ 0.9    | -1.000e-05 | 2.476e+06 | Getting ill-conditioned
+[Warning: p(x) = 0, condition number is infinite] 
+[> In <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp', 'C:\Users\Giuli\Documents\MATLAB\condp.m', 39)" style="font-weight:bold">condp</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp.m',39,0)">line 39</a>)
+In <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp_test', 'C:\Users\Giuli\Documents\MATLAB\condp_test.m', 69)" style="font-weight:bold">condp_test</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp_test.m',69,0)">line 69</a>)] 
+ 1.0    | 0.000e+00 | Inf | Severely ill-conditioned
+ 1.1    | 1.000e-05 | 4.084e+06 | Getting ill-conditioned
+ 1.5    | 3.125e-02 | 3.125e+03 | Acceptable
+ 2.0    | 1.000e+00 | 2.430e+02 | Acceptable
+ 5.0    | 1.024e+03 | 7.594e+00 | Well-conditioned
+
+Key insight: Near the root (x=1), condition number explodes!
+This is because |p(x)| → 0 while p_tilde(|x|) stays bounded.
+
+Test 3: Condition Number Growth with Degree
+--------------------------------------------------------------------
+p_n(x) = (x-1)^n at x = 1.333
+
+Degree | cond(p,x)    | log10(cond) | Status
+-------|--------------|-------------|------------------
+   3   | 3.439e+02  |    2.5     | Safe
+   5   | 1.688e+04  |    4.2     | Safe
+   8   | 5.804e+06  |    6.8     | Caution
+  10   | 2.849e+08  |    8.5     | Caution
+  13   | 9.798e+10  |    11.0     | Danger
+  15   | 4.809e+12  |    12.7     | Danger
+  18   | 1.668e+15  |    15.2     | CRITICAL
+  20   | 5.690e+16  |    16.8     | CRITICAL
+  23   | 1.518e+17  |    17.2     | CRITICAL
+  25   | 1.722e+17  |    17.2     | CRITICAL
+  28   | 2.471e+17  |    17.4     | CRITICAL
+  30   | 3.858e+17  |    17.6     | CRITICAL
+
+Observation: Condition number grows EXPONENTIALLY with degree!
+This explains why errors explode for high degrees.
+
+Test 4: Condition Number Predicts Error
+--------------------------------------------------------------------
+Comparing theoretical bound with observed error
+
+Degree | cond(p,x)    | Predicted Error | Observed Error | Ratio
+-------|--------------|-----------------|----------------|-------
+   5   | 1.688e+04  | 1.874e-11     | 2.972e-13    | 0.0159
+  10   | 2.849e+08  | 6.326e-07     | 1.415e-10    | 0.0002
+  15   | 4.809e+12  | 1.602e-02     | 6.053e-05    | 0.0038
+  20   | 5.690e+16  | 2.527e+02     | 2.427e+00    | 0.0096
+  25   | 1.722e+17  | 9.561e+02     | 7.954e+03    | 8.3191
+  30   | 3.858e+17  | 2.570e+03     | 5.995e+07    | 23328.9779
+
+Key finding: Observed error ≈ predicted error (ratio ~ 0.01-0.1)
+The error bound is tight: actual error is within predicted bound!
+
+Test 5: The Three Conditioning Regimes
+--------------------------------------------------------------------
+
+REGIME 1: SAFE (cond < 10^6)
+  - Relative error < 10^-10
+  - Classical Horner works perfectly
+  Example: (x-1)^5 at x=1.333, cond = 1.69e+04
+
+REGIME 2: DANGER (10^6 < cond < 10^14)
+  - Relative error growing (10^-10 to 10^-2)
+  - Classical Horner loses accuracy
+  - Compensated Horner recommended
+  Example: (x-1)^15 at x=1.333, cond = 4.81e+12
+
+REGIME 3: CRITICAL (cond > 10^14)
+  - Relative error > 10^-2 (catastrophic)
+  - Classical Horner fails completely
+  - Compensated Horner essential
+  Example: (x-1)^20 at x=1.333, cond = 5.69e+16
+
+The threshold cond * gamma_2n ≈ 1/u ≈ 10^16 marks total failure.
+
+Test 6: Special Cases and Edge Conditions
+--------------------------------------------------------------------
+
+Case 1: Polynomial with root at evaluation point
+  p(x) = x^2 at x = 0
+  p(0) = 0
+[Warning: p(x) = 0, condition number is infinite] 
+[> In <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp', 'C:\Users\Giuli\Documents\MATLAB\condp.m', 39)" style="font-weight:bold">condp</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp.m',39,0)">line 39</a>)
+In <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp_test', 'C:\Users\Giuli\Documents\MATLAB\condp_test.m', 196)" style="font-weight:bold">condp_test</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp_test.m',196,0)">line 196</a>)] 
+  cond(p, 0) = Inf
+
+Case 2: Large coefficients
+  p(x) = 10^10 + 10^10*x + 10^10*x^2 at x = 0.5
+  cond(p, 0.5) = 1.0000e+00
+
+Case 3: Cancellation-prone polynomial
+  p(x) = 1 - 2x + x^2 at x = 1.001 (near root at x=1)
+  cond(p, 1.001) = 4.0040e+06
+  This is VERY ill-conditioned!
+
+Test 7: Verify Formula Components
+--------------------------------------------------------------------
+For p(x) = 1 - 3x + 3x^2 - x^3 at x = 1.5
+
+Step-by-step computation:
+  |a_0| * |x|^0 = |1| * 1      = 1.000
+  |a_1| * |x|^1 = |-3| * 1.5   = 4.500
+  |a_2| * |x|^2 = |3| * 2.25   = 6.750
+  |a_3| * |x|^3 = |-1| * 3.375 = 3.375
+  ----------------------------------------
+  p_tilde(|x|) = 15.625
+
+  p(x) = (1.5-1)^3 = 0.5^3 = -0.125
+  |p(x)| = 0.125
+
+  cond(p,x) = p_tilde(|x|) / |p(x)|)
+            = 15.625 / 0.125
+            = 125.000
+
+Function result: 125.000
+{Arrays have incompatible sizes for this operation.
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp_test', 'C:\Users\Giuli\Documents\MATLAB\condp_test.m', 246)" style="font-weight:bold">condp_test</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp_test.m',246,0)">line 246</a>)
+fprintf('Match: %s\n\n', char((abs(cond7_manual - cond7_func) < 1e-10)*'YES' + ~(abs(cond7_manual - cond7_func) < 1e-10)*'NO'));
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<a href="matlab:helpview('matlab','error_sizeDimensionsMustMatch')" style="font-weight:bold">Related documentation</a>
+} 
+diary condp_results.txt
+condp_test
+========================================================================
+Condition Number Tests
+Understanding Problem Sensitivity
+========================================================================
+
+Unit roundoff (u): 1.1102e-16
+
+Test 1: Well-Conditioned Polynomials
+--------------------------------------------------------------------
+These should have condition numbers near 1
+
+Polynomial                    x      cond(p,x)   Status
+------------------------------------------------------------
+p(x) = 1                      1.0    1.0000e+00  Excellent
+p(x) = x                      1.0    1.0000e+00  Excellent
+p(x) = 1 + x                  0.5    1.0000e+00  Excellent
+p(x) = 1 + x + x^2            0.5    1.0000e+00  Excellent
+p(x) = 1 + x + x^2 + x^3      0.5    1.0000e+00  Excellent
+
+Test 2: How Evaluation Point Affects Conditioning
+--------------------------------------------------------------------
+p(x) = (x-1)^5 evaluated at different points
+
+   x    | p(x)      | cond(p,x)  | Interpretation
+--------|-----------|------------|---------------------------
+ 0.5    | -3.125e-02 | 2.430e+02 | Acceptable
+ 0.9    | -1.000e-05 | 2.476e+06 | Getting ill-conditioned
+[Warning: p(x) = 0, condition number is infinite] 
+[> In <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp', 'C:\Users\Giuli\Documents\MATLAB\condp.m', 39)" style="font-weight:bold">condp</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp.m',39,0)">line 39</a>)
+In <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp_test', 'C:\Users\Giuli\Documents\MATLAB\condp_test.m', 69)" style="font-weight:bold">condp_test</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp_test.m',69,0)">line 69</a>)] 
+ 1.0    | 0.000e+00 | Inf | Severely ill-conditioned
+ 1.1    | 1.000e-05 | 4.084e+06 | Getting ill-conditioned
+ 1.5    | 3.125e-02 | 3.125e+03 | Acceptable
+ 2.0    | 1.000e+00 | 2.430e+02 | Acceptable
+ 5.0    | 1.024e+03 | 7.594e+00 | Well-conditioned
+
+Key insight: Near the root (x=1), condition number explodes!
+This is because |p(x)| → 0 while p_tilde(|x|) stays bounded.
+
+Test 3: Condition Number Growth with Degree
+--------------------------------------------------------------------
+p_n(x) = (x-1)^n at x = 1.333
+
+Degree | cond(p,x)    | log10(cond) | Status
+-------|--------------|-------------|------------------
+   3   | 3.439e+02  |    2.5     | Safe
+   5   | 1.688e+04  |    4.2     | Safe
+   8   | 5.804e+06  |    6.8     | Caution
+  10   | 2.849e+08  |    8.5     | Caution
+  13   | 9.798e+10  |    11.0     | Danger
+  15   | 4.809e+12  |    12.7     | Danger
+  18   | 1.668e+15  |    15.2     | CRITICAL
+  20   | 5.690e+16  |    16.8     | CRITICAL
+  23   | 1.518e+17  |    17.2     | CRITICAL
+  25   | 1.722e+17  |    17.2     | CRITICAL
+  28   | 2.471e+17  |    17.4     | CRITICAL
+  30   | 3.858e+17  |    17.6     | CRITICAL
+
+Observation: Condition number grows EXPONENTIALLY with degree!
+This explains why errors explode for high degrees.
+
+Test 4: Condition Number Predicts Error
+--------------------------------------------------------------------
+Comparing theoretical bound with observed error
+
+Degree | cond(p,x)    | Predicted Error | Observed Error | Ratio
+-------|--------------|-----------------|----------------|-------
+   5   | 1.688e+04  | 1.874e-11     | 2.972e-13    | 0.0159
+  10   | 2.849e+08  | 6.326e-07     | 1.415e-10    | 0.0002
+  15   | 4.809e+12  | 1.602e-02     | 6.053e-05    | 0.0038
+  20   | 5.690e+16  | 2.527e+02     | 2.427e+00    | 0.0096
+  25   | 1.722e+17  | 9.561e+02     | 7.954e+03    | 8.3191
+  30   | 3.858e+17  | 2.570e+03     | 5.995e+07    | 23328.9779
+
+Key finding: Observed error ≈ predicted error (ratio ~ 0.01-0.1)
+The error bound is tight: actual error is within predicted bound!
+
+Test 5: The Three Conditioning Regimes
+--------------------------------------------------------------------
+
+REGIME 1: SAFE (cond < 10^6)
+  - Relative error < 10^-10
+  - Classical Horner works perfectly
+  Example: (x-1)^5 at x=1.333, cond = 1.69e+04
+
+REGIME 2: DANGER (10^6 < cond < 10^14)
+  - Relative error growing (10^-10 to 10^-2)
+  - Classical Horner loses accuracy
+  - Compensated Horner recommended
+  Example: (x-1)^15 at x=1.333, cond = 4.81e+12
+
+REGIME 3: CRITICAL (cond > 10^14)
+  - Relative error > 10^-2 (catastrophic)
+  - Classical Horner fails completely
+  - Compensated Horner essential
+  Example: (x-1)^20 at x=1.333, cond = 5.69e+16
+
+The threshold cond * gamma_2n ≈ 1/u ≈ 10^16 marks total failure.
+
+Test 6: Special Cases and Edge Conditions
+--------------------------------------------------------------------
+
+Case 1: Polynomial with root at evaluation point
+  p(x) = x^2 at x = 0
+  p(0) = 0
+[Warning: p(x) = 0, condition number is infinite] 
+[> In <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp', 'C:\Users\Giuli\Documents\MATLAB\condp.m', 39)" style="font-weight:bold">condp</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp.m',39,0)">line 39</a>)
+In <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('condp_test', 'C:\Users\Giuli\Documents\MATLAB\condp_test.m', 196)" style="font-weight:bold">condp_test</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\condp_test.m',196,0)">line 196</a>)] 
+  cond(p, 0) = Inf
+
+Case 2: Large coefficients
+  p(x) = 10^10 + 10^10*x + 10^10*x^2 at x = 0.5
+  cond(p, 0.5) = 1.0000e+00
+
+Case 3: Cancellation-prone polynomial
+  p(x) = 1 - 2x + x^2 at x = 1.001 (near root at x=1)
+  cond(p, 1.001) = 4.0040e+06
+  This is VERY ill-conditioned!
+
+Test 7: Verify Formula Components
+--------------------------------------------------------------------
+For p(x) = 1 - 3x + 3x^2 - x^3 at x = 1.5
+
+Step-by-step computation:
+  |a_0| * |x|^0 = |1| * 1      = 1.000
+  |a_1| * |x|^1 = |-3| * 1.5   = 4.500
+  |a_2| * |x|^2 = |3| * 2.25   = 6.750
+  |a_3| * |x|^3 = |-1| * 3.375 = 3.375
+  ----------------------------------------
+  p_tilde(|x|) = 15.625
+
+  p(x) = (1.5-1)^3 = 0.5^3 = -0.125
+  |p(x)| = 0.125
+
+  cond(p,x) = p_tilde(|x|) / |p(x)|)
+            = 15.625 / 0.125
+            = 125.000
+
+Function result: 125.000
+Match: YES
+
+Test 8: Practical Decision Making
+--------------------------------------------------------------------
+Given a polynomial evaluation task, which algorithm to use?
+
+Problem              | Degree | x     | cond(p,x)    | Recommendation
+---------------------|--------|-------|--------------|-------------------
+Well-conditioned     |      5 | 1.500 | 3.125e+03 | Classical OK
+Moderate             |     10 | 1.300 | 7.016e+08 | Classical acceptable
+Ill-conditioned      |     15 | 1.200 | 4.142e+15 | Compensated ESSENTIAL
+Severely ill-cond    |     20 | 1.333 | 5.690e+16 | Compensated ESSENTIAL
+Extreme              |     30 | 1.333 | 3.858e+17 | Compensated ESSENTIAL
+
+========================================================================
+SUMMARY: Understanding Condition Numbers
+========================================================================
+
+DEFINITION:
+  cond(p,x) = sum(|a_i| |x|^i) / |sum(a_i x^i)|
+            = p_tilde(|x|) / |p(x)|
+
+INTERPRETATION:
+  - Measures sensitivity to coefficient perturbations
+  - Large cond → small changes in coefficients → large changes in p(x)
+  - Near roots: |p(x)| → 0, so cond → ∞
+
+ERROR RELATIONSHIP:
+  Forward error ≈ cond(p,x) × backward error
+  Classical Horner: error ≲ gamma_2n * cond(p,x)
+  Compensated Horner: error ≲ u + gamma_2n^2 * cond(p,x)
+
+PRACTICAL RULES:
+  cond < 10^6:  Use classical Horner (fast)
+  10^6 < cond < 10^14: Consider compensated
+  cond > 10^14: Must use compensated
+
+KEY INSIGHT:
+  Condition number is a PROPERTY OF THE PROBLEM, not the algorithm.
+  Good algorithms cannot fix ill-conditioned problems, but they can
+  compute the best possible answer given the conditioning.
+========================================================================
+Graph
+========================================================================
+Generating Condition Number vs Relative Error Plot
+Reproducing slide 34 from lecture notes
+========================================================================
+
+Computing for n = 3 to 42...
+  n = 5
+  n = 10
+  n = 15
+  n = 20
+  n = 25
+  n = 30
+  n = 35
+  n = 40
+Computation complete!
+
+Creating plot...
+Plot created successfully!
+
+Plot saved as: Horner_Comparison_Plot.png
+
+========================================================================
+Key Statistics from the Plot
+========================================================================
+
+Classical Horner FAILS (error >= 1) at:
+  n = 20
+  Condition number = 5.69e+16
+  Relative error = 2.43e+00
+
+Maximum errors observed:
+  Classical: 2.30e+18 at n = 42 (cond = 1.41e+17)
+  Compensated: 1.19e+03 at n = 42 (cond = 1.41e+17)
+
+Condition number range:
+  Minimum: 3.44e+02 (n = 3)
+  Maximum: 5.43e+18 (n = 42)
+
+Number of test cases in each regime:
+  Safe (cond < 10^6):           5 cases
+  Danger (10^6 <= cond < 10^14): 9 cases
+  Critical (cond >= 10^14):      26 cases
+
+Improvement factors (Classical error / Compensated error):
+  Minimum: 2.50e+00
+  Maximum: 1.80e+17
+  Median:  1.70e+15
+
+========================================================================
+Summary Table for Key Degrees
+========================================================================
+
+  n  | Cond Number | Classic Error | Comp Error   | Improvement
+-----|-------------|---------------|--------------|-------------
+  3  | 3.44e+02  | 9.40e-16    | 3.76e-16   | 2.50e+00
+ 10  | 2.85e+08  | 1.42e-10    | 1.21e-15   | 1.17e+05
+ 15  | 4.81e+12  | 6.05e-05    | 1.54e-15   | 3.92e+10
+ 20  | 5.69e+16  | 2.43e+00    | 2.57e-15   | 9.43e+14
+ 25  | 1.72e+17  | 7.95e+03    | 2.03e-12   | 3.92e+15
+ 30  | 3.86e+17  | 5.99e+07    | 3.64e-08   | 1.65e+15
+ 35  | 5.25e+16  | 7.43e+12    | 4.12e-05   | 1.80e+17
+ 40  | 1.15e+17  | 5.75e+16    | 1.00e+00   | 5.75e+16
+ 42  | 1.41e+17  | 2.30e+18    | 1.19e+03   | 1.93e+15
+
+========================================================================
+Plot successfully recreated from slide 34!
+Classical: Follows γ_2n*cond bound (triangles)
+Compensated: Stays near u regardless of condition number (diamonds)
+========================================================================
+Graph
+========================================================================
+Generating Condition Number vs Relative Error Plot
+Reproducing slide 34 from lecture notes
+========================================================================
+
+Computing for n = 3 to 42...
+  n = 5
+  n = 10
+  n = 15
+  n = 20
+  n = 25
+  n = 30
+  n = 35
+  n = 40
+Computation complete!
+
+Creating plot...
+Plot created successfully!
+
+Plot saved as: Horner_Comparison_Plot.png
+
+========================================================================
+Key Statistics from the Plot
+========================================================================
+
+Classical Horner FAILS (error >= 1) at:
+  n = 20
+  Condition number = 5.69e+16
+  Relative error = 2.43e+00
+
+Maximum errors observed:
+  Classical: 2.30e+18 at n = 42 (cond = 1.41e+17)
+  Compensated: 1.19e+03 at n = 42 (cond = 1.41e+17)
+
+Condition number range:
+  Minimum: 3.44e+02 (n = 3)
+  Maximum: 5.43e+18 (n = 42)
+
+Number of test cases in each regime:
+  Safe (cond < 10^6):           5 cases
+  Danger (10^6 <= cond < 10^14): 9 cases
+  Critical (cond >= 10^14):      26 cases
+
+Improvement factors (Classical error / Compensated error):
+  Minimum: 2.50e+00
+  Maximum: 1.80e+17
+  Median:  1.70e+15
+
+========================================================================
+Summary Table for Key Degrees
+========================================================================
+
+  n  | Cond Number | Classic Error | Comp Error   | Improvement
+-----|-------------|---------------|--------------|-------------
+  3  | 3.44e+02  | 9.40e-16    | 3.76e-16   | 2.50e+00
+ 10  | 2.85e+08  | 1.42e-10    | 1.21e-15   | 1.17e+05
+ 15  | 4.81e+12  | 6.05e-05    | 1.54e-15   | 3.92e+10
+ 20  | 5.69e+16  | 2.43e+00    | 2.57e-15   | 9.43e+14
+ 25  | 1.72e+17  | 7.95e+03    | 2.03e-12   | 3.92e+15
+ 30  | 3.86e+17  | 5.99e+07    | 3.64e-08   | 1.65e+15
+ 35  | 5.25e+16  | 7.43e+12    | 4.12e-05   | 1.80e+17
+ 40  | 1.15e+17  | 5.75e+16    | 1.00e+00   | 5.75e+16
+ 42  | 1.41e+17  | 2.30e+18    | 1.19e+03   | 1.93e+15
+
+========================================================================
+Plot successfully recreated from slide 34!
+Classical: Follows γ_2n*cond bound (triangles)
+Compensated: Stays near u regardless of condition number (diamonds)
+========================================================================
+diary condp_results.txt
+condp_test
+n=25: cond = 1.72e+17
+n=30: cond = 3.86e+17
+n=35: cond = 5.25e+16
+n=40: cond = 1.15e+17
+n=42: cond = 1.41e+17
+Graph
+========================================================================
+Generating Condition Number vs Relative Error Plot
+Reproducing slide 34 from lecture notes
+========================================================================
+
+Computing for n = 3 to 42...
+  n = 5
+  n = 10
+  n = 15
+  n = 20
+  n = 25
+  n = 30
+  n = 35
+  n = 40
+Computation complete!
+
+Creating plot...
+Plot created successfully!
+
+Plot saved as: Horner_Comparison_Plot.png
+
+========================================================================
+Key Statistics from the Plot
+========================================================================
+
+Classical Horner FAILS (error >= 1) at:
+  n = 20
+  Condition number = 8.12e+16
+  Relative error = 2.43e+00
+
+Maximum errors observed:
+  Classical: 2.30e+18 at n = 42 (cond = 3.23e+35)
+  Compensated: 1.19e+03 at n = 42 (cond = 3.23e+35)
+
+Condition number range:
+  Minimum: 3.44e+02 (n = 3)
+  Maximum: 3.23e+35 (n = 42)
+
+Number of test cases in each regime:
+  Safe (cond < 10^6):           5 cases
+  Danger (10^6 <= cond < 10^14): 9 cases
+  Critical (cond >= 10^14):      26 cases
+
+Improvement factors (Classical error / Compensated error):
+  Minimum: 2.50e+00
+  Maximum: 1.80e+17
+  Median:  1.70e+15
+
+========================================================================
+Summary Table for Key Degrees
+========================================================================
+
+  n  | Cond Number | Classic Error | Comp Error   | Improvement
+-----|-------------|---------------|--------------|-------------
+  3  | 3.44e+02  | 9.40e-16    | 3.76e-16   | 2.50e+00
+ 10  | 2.85e+08  | 1.42e-10    | 1.21e-15   | 1.17e+05
+ 15  | 4.81e+12  | 6.05e-05    | 1.54e-15   | 3.92e+10
+ 20  | 8.12e+16  | 2.43e+00    | 2.57e-15   | 9.43e+14
+ 25  | 1.37e+21  | 7.95e+03    | 2.03e-12   | 3.92e+15
+ 30  | 2.31e+25  | 5.99e+07    | 3.64e-08   | 1.65e+15
+ 35  | 3.90e+29  | 7.43e+12    | 4.12e-05   | 1.80e+17
+ 40  | 6.59e+33  | 5.75e+16    | 1.00e+00   | 5.75e+16
+ 42  | 3.23e+35  | 2.30e+18    | 1.19e+03   | 1.93e+15
+
+========================================================================
+Plot successfully recreated from slide 34!
+Classical: Follows γ_2n*cond bound (triangles)
+Compensated: Stays near u regardless of condition number (diamonds)
+========================================================================

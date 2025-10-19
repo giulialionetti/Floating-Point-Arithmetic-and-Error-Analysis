@@ -1,0 +1,167 @@
+TwoProduct_test
+========================================================================
+TwoProduct Algorithm Test Suite (Algorithm 1.4)
+Error-Free Transformation for Multiplication
+========================================================================
+
+Machine epsilon (eps): 2.2204e-16
+Unit roundoff (u):     1.1102e-16
+
+Test 1: Exactness - Verify a * b = x + y
+--------------------------------------------------------------------
+  a                  b                  |a*b - (x+y)|   Exact?
+--------------------------------------------------------------------
+  1.0000000000e+00   1.0000000000e+00   0.0000e+00       ✓
+  2.0000000000e+00   3.0000000000e+00   0.0000e+00       ✓
+  1.5000000000e+00   2.5000000000e+00   0.0000e+00       ✓
+  1.0000000000e+00   1.0000000000e+00   0.0000e+00       ✓
+  1.0000000000e+00   1.0000000000e+00   0.0000e+00       ✓
+  3.1415926536e+00   2.7182818285e+00   0.0000e+00       ✓
+  1.0000000000e-01   1.0000000000e-01   0.0000e+00       ✓
+  1.0000000000e+10   1.0000000000e-10   0.0000e+00       ✓
+  1.4142135624e+00   1.7320508076e+00   0.0000e+00       ✓
+
+✓ Test 1 PASSED: All cases exact (a * b = x + y)
+
+Test 2: Error Bound - Verify |y| <= u|x|
+--------------------------------------------------------------------
+  a              b              |y|          u|x|         |y|/(u|x|)  OK?
+-------------------------------------------------------------------------------
+  1.0000e+00   1.0000e+00   0.0000e+00   1.1102e-16   0.000000   ✓
+  1.0000e+00   1.0000e+00   4.9304e-32   1.1102e-16   0.000000   ✓
+  3.1416e+00   2.7183e+00   3.1192e-16   9.4810e-16   0.328993   ✓
+  1.1000e+00   1.2000e+00   4.4409e-18   1.4655e-16   0.030303   ✓
+  1.0000e+02   1.0000e-02   2.0817e-17   1.1102e-16   0.187500   ✓
+  1.0000e-01   1.0000e-01   8.3267e-19   1.1102e-18   0.750000   ✓
+
+✓ Test 2 PASSED: Error bound satisfied for all cases
+
+Test 3: Rounding Error Detection in Multiplication
+--------------------------------------------------------------------
+  a          b          x              y              Rounding?
+--------------------------------------------------------------------
+  2.0000   2.0000   4.0000000000000000e+00   0.0000e+00   No 
+  0.5000   4.0000   2.0000000000000000e+00   0.0000e+00   No 
+  1.1000   1.1000   1.2100000000000002e+00   8.8818e-18   Yes
+  0.1000   0.1000   1.0000000000000002e-02   8.3267e-19   Yes
+  3.1416   2.0000   6.2831853071795862e+00   0.0000e+00   No 
+
+Observation: y ≠ 0 when rounding occurs in fl(a*b)
+Powers of 2 multiply exactly (y = 0)
+
+Test 4: Recovery of Lost Precision in Multiplication
+--------------------------------------------------------------------
+Case 1: (1 + eps) * (1 - eps)
+  a = 1.0000000000000002e+00
+  b = 9.9999999999999978e-01
+  Direct: fl(a*b) = 1.0000000000000000e+00
+  TwoProduct: x = 1.0000000000000000e+00
+              y = -4.9303806576313238e-32
+  x + y = 1.0000000000000000e+00 (exact a*b)
+
+Case 2: 0.1 * 0.1 (neither exactly representable)
+  Expected: 0.01 exactly
+  Direct: fl(0.1*0.1) = 1.0000000000000002e-02
+  TwoProduct: x = 1.0000000000000002e-02
+              y = -8.3266726846886737e-19
+  x + y = 1.0000000000000002e-02
+  Error in direct: 1.7347e-18
+  Error recovered by y: 8.3267e-19
+
+Test 5: Validation Against High-Precision Computation
+--------------------------------------------------------------------
+Computing π * e:
+  a = π = 3.1415926535897931e+00
+  b = e = 2.7182818284590451e+00
+  Direct fl(π*e) = 8.5397342226735660e+00
+  TwoProduct:
+    x = 8.5397342226735660e+00
+    y = 3.1191843083557649e-16
+    x + y = 8.5397342226735660e+00
+  Difference: 0.0000e+00
+
+Test 6: Demonstrating How Split Enables Exact Multiplication
+--------------------------------------------------------------------
+Computing 1.1 * 1.2:
+
+Step 1: Split operands
+  a = 1.1000000000000001e+00 = 1.0999999940395355e+00 + 5.9604645663569045e-09
+  b = 1.2000000000000000e+00 = 1.1999999880790710e+00 + 1.1920928910669204e-08
+
+Step 2: Exact expansion (mathematically)
+  a * b = (a1 + a2) * (b1 + b2)
+        = a1*b1 + a1*b2 + a2*b1 + a2*b2
+
+Step 3: Compute sub-products
+  a1*b1 = 1.3199999797344208e+00
+  a1*b2 = 1.3113021730681851e-08
+  a2*b1 = 7.1525574085740107e-09
+  a2*b2 = 7.1054274370103403e-17
+
+Step 4: Main product and error recovery
+  x = fl(a*b) = 1.3200000000000001e+00
+  Error y (from TwoProduct) = -4.4408920985006301e-18
+  x + y = 1.3200000000000001e+00
+
+Conclusion: Split allows exact tracking of all rounding errors!
+
+Test 7: Extreme Magnitude Differences
+--------------------------------------------------------------------
+  a           b           x           y           |y|/|x|
+------------------------------------------------------------------
+  1e+100   1e-100   1.0000e+00   3.5895e-17   3.5895e-17
+  1e+10   1e-10   1.0000e+00   3.6432e-17   3.6432e-17
+  1e+05   1e-05   1.0000e+00   8.1803e-17   8.1803e-17
+
+Observation: TwoProduct works across extreme magnitude ranges
+
+Test 8: Edge Cases
+--------------------------------------------------------------------
+  Case                a              b              x              y
+-------------------------------------------------------------------------------
+  Zero product        0.0000e+00   5.0000e+00   0.0000e+00   0.0000e+00
+  One                 1.0000e+00   1.0000e+00   1.0000e+00   0.0000e+00
+  Negative            -2.5000e+00   3.5000e+00   -8.7500e+00   0.0000e+00
+  Both negative       -1.5000e+00   -2.5000e+00   3.7500e+00   0.0000e+00
+  Very small          2.2204e-16   2.2204e-16   4.9304e-32   0.0000e+00
+
+Test 9: Advantage of TwoProduct Over Direct Computation
+--------------------------------------------------------------------
+Computing (1 + eps) * (1 + eps/2):
+  a = 1.0000000000000002e+00
+  b = 1.0000000000000000e+00
+
+Direct computation:
+  fl(a * b) = 1.0000000000000002e+00
+  Information may be lost in rounding
+
+With TwoProduct:
+  x = 1.0000000000000002e+00
+  y = 0.0000000000000000e+00
+  x + y = 1.0000000000000002e+00 (exact a * b)
+  No information lost!
+
+========================================================================
+Summary of TwoProduct Algorithm
+========================================================================
+
+Properties Verified:
+  ✓ Exactness: a * b = x + y (zero residual for all tests)
+  ✓ Error bound: |y| <= u|x| satisfied
+  ✓ Rounding detection: y captures exact multiplication error
+  ✓ Works across extreme magnitude ranges (10^100 to 10^-100)
+  ✓ Handles edge cases (zero, negative, very small)
+
+Key Insights:
+  1. Split algorithm divides mantissa → enables exact sub-products
+  2. Dekker formula: y = a2*b2 - (((x - a1*b1) - a2*b1) - a1*b2)
+  3. Cost: 17 flops (using Split), or 2 flops with FMA hardware
+  4. Foundation for compensated multiplication algorithms
+
+Applications:
+  → Compensated dot products
+  → Compensated Horner scheme (polynomial evaluation)
+  → Accurate matrix computations
+  → Any algorithm needing exact multiplication
+========================================================================
+diary CompHorner_results.txt

@@ -1,0 +1,538 @@
+HornerSymbolic_test
+========================================================================
+Symbolic vs Floating-Point Horner Schemes
+Using Exact Arithmetic as Ground Truth
+========================================================================
+
+Machine epsilon (eps): 2.2204e-16
+Unit roundoff (u):     1.1102e-16
+
+Test 1: Verification with Simple Polynomial
+--------------------------------------------------------------------
+p(x) = 1 + 2x + 3x^2 at x = 0.5
+
+{sym requires <a href="matlab:matlab.internal.addons.launchers.showExplorer('ErrorRecovery', 'identifier', 'SM', 'focused', 'sym');">Symbolic Math Toolbox</a>.
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('HornerSymbolic', 'C:\Users\Giuli\Documents\MATLAB\HornerSymbolic.m', 16)" style="font-weight:bold">HornerSymbolic</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\HornerSymbolic.m',16,0)">line 16</a>)
+    p_sym = sym(p);
+    ^^^^^^^^^^^^^^^
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('HornerSymbolic_test', 'C:\Users\Giuli\Documents\MATLAB\HornerSymbolic_test.m', 27)" style="font-weight:bold">HornerSymbolic_test</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\HornerSymbolic_test.m',27,0)">line 27</a>)
+res_sym1 = HornerSymbolic(p1, x1);
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+} 
+HornerSymbolic_test
+========================================================================
+Symbolic vs Floating-Point Horner Schemes
+Using Exact Arithmetic as Ground Truth
+========================================================================
+
+Machine epsilon (eps): 2.2204e-16
+Unit roundoff (u):     1.1102e-16
+
+Test 1: Verification with Simple Polynomial
+--------------------------------------------------------------------
+p(x) = 1 + 2x + 3x^2 at x = 0.5
+
+Symbolic (exact):    11/4
+In decimal:          2.7500000000000000e+00
+Classical Horner:    2.7500000000000000e+00 (error: 0.0000e+00)
+Compensated Horner:  2.7500000000000000e+00 (error: 0.0000e+00)
+
+Test 2: (x-1)^n at x = 1.333 - Using Symbolic Ground Truth
+========================================================================
+
+Deg | True Exact Value      | Classical Error | Compensated Error | Ratio
+----|----------------------|-----------------|-------------------|---------
+  5 | 4.094691316893000e-03 | 1.2169e-15      | 1.7347e-18        | NaN
+ 10 | 1.676649698063893e-05 | 2.3728e-15      | 2.0329e-20        | NaN
+ 15 | 6.865362960133493e-08 | 4.1555e-12      | 1.0588e-22        | NaN
+ 20 | 2.811154210017744e-10 | 6.8217e-10      | 7.2378e-25        | NaN
+ 25 | 1.151080873420686e-12 | 9.1556e-09      | 2.3374e-24        | NaN
+ 30 | 4.713320857437292e-15 | 2.8256e-07      | 1.7149e-22        | NaN
+
+Note: Using symbolic math for TRUE exact values!
+
+Test 3: Extreme Detail at n=20
+--------------------------------------------------------------------
+
+TRUE EXACT VALUE (symbolic):
+  Symbolic: 0.00000000028111542100177437457963472486536
+  Decimal:  2.81115421001774374208e-10
+
+CLASSICAL HORNER:
+  Result:   -4.01052524523493048036e-10
+  Error:    6.8217e-10
+  Sign:     negative
+
+COMPENSATED HORNER:
+  Result:   2.81115421001773650425e-10
+  Error:    7.2378e-25
+  Sign:     positive
+
+COMPARISON:
+  Classical is WRONG by: 6.82167945525267422244e-10
+  Compensated is WRONG by: 7.23783035983899215512e-25
+  Compensated is 9.43e+14 times more accurate!
+
+Test 4: Inside Symbolic Computation
+--------------------------------------------------------------------
+Computing (x-1)^3 at x = 1.333 symbolically
+
+Polynomial coefficients: [-1 3 -3 1 ]
+Expanded form: p(x) = -1x^0 + 3x^1 + -3x^2 + 1x^3
+              = 1 - 3x + 3x^2 - x^3
+
+x (exact rational): 1333/1000
+x (decimal):        1.3330000000000000e+00
+
+Horner steps (symbolic):
+  s_3 = 1
+  s_2 = s_3 * x + a_2 = (1) * 1333/1000 + -3
+      = -1667/1000
+  s_1 = s_2 * x + a_1 = (-1667/1000) * 1333/1000 + 3
+      = 777889/1000000
+  s_0 = s_1 * x + a_0 = (777889/1000000) * 1333/1000 + -1
+      = 36926037/1000000000
+
+Final exact result: 36926037/1000000000
+As decimal:         3.69260370000000018309e-02
+Factored form:      (1.333-1)^3 = 3.69260370000000018309e-02
+
+Test 5: Arbitrary Precision with VPA
+--------------------------------------------------------------------
+Computing (x-1)^20 at x = 1.333 with 50 digits precision
+
+Result with 50 decimal digits:
+0.00000000028111542100177437457963472486536071551507082315347
+
+Double precision (16 digits):
+  Classical:   -4.0105252452349305e-10
+  Compensated: 2.8111542100177365e-10
+  True value:  2.8111542100177437e-10
+
+Digits agreement with true value:
+  Exact:       0.00000000028111542100177437458
+  Classical:   -4.0105252452349305e-10 (WRONG SIGN)
+  Compensated: 2.8111542100177365e-10
+
+Test 6: Verify Symbolic Exactness
+--------------------------------------------------------------------
+Compare symbolic result with factored form
+
+Expanded form result:  0.000016766496980638930547173449
+Factored form result:  0.000016766496980638930547173449
+Difference:            -7.4442271333129430615996607162185e-38
+Are they equal?        NO
+
+⚠ Symbolic results differ (should not happen)
+
+Test 7: Complete Accuracy Comparison
+========================================================================
+Using symbolic computation as ground truth
+
+Deg |    Exact Value    | Classical      | Comp. Error   | Improvement
+----|-------------------|----------------|---------------|-------------
+  3 | 3.6926037000e-02 | 9.3957e-16     | 3.7583e-16    | NaN
+  5 | 4.0946913169e-03 | 2.9719e-13     | 4.2365e-16    | NaN
+  8 | 1.5120072307e-04 | 1.9903e-10     | 8.9633e-16    | NaN
+ 10 | 1.6766496981e-05 | 1.4152e-10     | 1.2125e-15    | NaN
+ 13 | 6.1912028787e-07 | 1.1727e-06     | 1.3681e-15    | NaN
+ 15 | 6.8653629601e-08 | 6.0528e-05     | 1.5422e-15    | NaN
+ 18 | 2.5351064668e-09 | 8.2503e-03     | 2.1209e-15    | NaN
+ 20 | 2.8111542100e-10 | 2.4266e+00     | 2.5747e-15    | NaN
+ 25 | 1.1510808734e-12 | 7.9539e+03     | 2.0306e-12    | NaN
+ 30 | 4.7133208574e-15 | 5.9950e+07     | 3.6384e-08    | NaN
+
+========================================================================
+SUMMARY: Symbolic vs Floating-Point
+========================================================================
+
+Key Findings:
+
+1. SYMBOLIC COMPUTATION:
+   - Provides TRUE exact values
+   - No rounding errors whatsoever
+   - Can compute with arbitrary precision (VPA)
+   - Much slower than floating-point
+
+2. CLASSICAL HORNER (Floating-point):
+   - Fast (2n flops)
+   - Can fail badly when cancellation is severe
+
+3. COMPENSATED HORNER (Floating-point):
+   - Moderate speed (~4x Horner with EFTs)
+   - Near-exact up to cond ~ 1e20 (empirically)
+
+4. WHY COMPENSATED WORKS:
+   - Uses EFTs (TwoSum/TwoProd) to track roundoff
+   - Corrects errors accumulated in Horner
+
+========================================================================
+HornerSymbolic_test
+========================================================================
+Symbolic vs Floating-Point Horner Schemes
+Using Exact Arithmetic as Ground Truth
+========================================================================
+
+Machine epsilon (eps): 2.2204e-16
+Unit roundoff (u):     1.1102e-16
+
+Test 1: Verification with Simple Polynomial
+--------------------------------------------------------------------
+p(x) = 1 + 2x + 3x^2 at x = 0.5
+
+Symbolic (exact):    11/4
+In decimal:          2.7500000000000000e+00
+Classical Horner:    2.7500000000000000e+00 (error: 0.0000e+00)
+Compensated Horner:  2.7500000000000000e+00 (error: 0.0000e+00)
+
+Test 2: (x-1)^n at x = 1.333 - Using Symbolic Ground Truth
+========================================================================
+
+Deg | True Exact Value      | Classical Error | Compensated Error | Ratio
+----|----------------------|-----------------|-------------------|---------
+  5 | 4.094691316893000e-03 | 1.2169e-15      | 1.7347e-18        | 7.02e+02
+ 10 | 1.676649698063893e-05 | 2.3728e-15      | 2.0329e-20        | 1.17e+05
+ 15 | 6.865362960133493e-08 | 4.1555e-12      | 1.0588e-22        | 3.92e+10
+ 20 | 2.811154210017744e-10 | 6.8217e-10      | 7.2378e-25        | 9.43e+14
+ 25 | 1.151080873420686e-12 | 9.1556e-09      | 2.3374e-24        | 3.92e+15
+ 30 | 4.713320857437292e-15 | 2.8256e-07      | 1.7149e-22        | 1.65e+15
+
+Note: Using symbolic math for TRUE exact values!
+
+Test 3: Extreme Detail at n=20
+--------------------------------------------------------------------
+
+TRUE EXACT VALUE (symbolic):
+  Symbolic: 281115421001774374579634992633479402937923290555601/1000000000000000000000000000000000000000000000000000000000000
+  Decimal:  2.81115421001774374208e-10
+
+CLASSICAL HORNER:
+  Result:   -4.01052524523493048036e-10
+  Error:    6.8217e-10
+{Arrays have incompatible sizes for this operation.
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('HornerSymbolic_test', 'C:\Users\Giuli\Documents\MATLAB\HornerSymbolic_test.m', 102)" style="font-weight:bold">HornerSymbolic_test</a> (<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\HornerSymbolic_test.m',102,0)">line 102</a>)
+fprintf('  Sign:     %s\n\n', char(sign(res_classic3) * 'positive' + ~sign(res_classic3) * 'zero/negative'));
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<a href="matlab:helpview('matlab','error_sizeDimensionsMustMatch')" style="font-weight:bold">Related documentation</a>
+} 
+HornerSymbolic_test
+{<a href="matlab: opentoline('C:\Users\Giuli\Documents\MATLAB\HornerSymbolic_test.m',102,61)">File: HornerSymbolic_test.m Line: 102 Column: 61</a>
+Invalid expression. When calling a function or indexing a variable, use parentheses.
+Otherwise, check for mismatched delimiters.
+} 
+HornerSymbolic_test
+========================================================================
+Symbolic vs Floating-Point Horner Schemes
+Using Exact Arithmetic as Ground Truth
+========================================================================
+
+Machine epsilon (eps): 2.2204e-16
+Unit roundoff (u):     1.1102e-16
+
+Test 1: Verification with Simple Polynomial
+--------------------------------------------------------------------
+p(x) = 1 + 2x + 3x^2 at x = 0.5
+
+Symbolic (exact):    11/4
+In decimal:          2.7500000000000000e+00
+Classical Horner:    2.7500000000000000e+00 (error: 0.0000e+00)
+Compensated Horner:  2.7500000000000000e+00 (error: 0.0000e+00)
+
+Test 2: (x-1)^n at x = 1.333 - Using Symbolic Ground Truth
+========================================================================
+
+Deg | True Exact Value      | Classical Error | Compensated Error | Ratio
+----|----------------------|-----------------|-------------------|---------
+  5 | 4.094691316893000e-03 | 1.2169e-15      | 1.7347e-18        | 7.02e+02
+ 10 | 1.676649698063893e-05 | 2.3728e-15      | 2.0329e-20        | 1.17e+05
+ 15 | 6.865362960133493e-08 | 4.1555e-12      | 1.0588e-22        | 3.92e+10
+ 20 | 2.811154210017744e-10 | 6.8217e-10      | 7.2378e-25        | 9.43e+14
+ 25 | 1.151080873420686e-12 | 9.1556e-09      | 2.3374e-24        | 3.92e+15
+ 30 | 4.713320857437292e-15 | 2.8256e-07      | 1.7149e-22        | 1.65e+15
+
+Note: Using symbolic math for TRUE exact values!
+
+Test 3: Extreme Detail at n=20
+--------------------------------------------------------------------
+
+TRUE EXACT VALUE (symbolic):
+  Symbolic: 281115421001774374579634992633479402937923290555601/1000000000000000000000000000000000000000000000000000000000000
+  Decimal:  2.81115421001774374208e-10
+
+CLASSICAL HORNER:
+  Result:   -4.01052524523493048036e-10
+  Error:    6.8217e-10
+COMPENSATED HORNER:
+  Result:   2.81115421001773650425e-10
+  Error:    7.2378e-25
+  Sign:     positive
+
+COMPARISON:
+  Classical is WRONG by: 6.82167945525267422244e-10
+  Compensated is WRONG by: 7.23783035983899215512e-25
+  Compensated is 9.43e+14 times more accurate!
+
+Test 4: Inside Symbolic Computation
+--------------------------------------------------------------------
+Computing (x-1)^3 at x = 1.333 symbolically
+
+Polynomial coefficients: [-1 3 -3 1 ]
+Expanded form: p(x) = -1x^0 + 3x^1 + -3x^2 + 1x^3
+              = 1 - 3x + 3x^2 - x^3
+
+x (exact rational): 1333/1000
+x (decimal):        1.3330000000000000e+00
+
+Horner steps (symbolic):
+  s_3 = 1
+  s_2 = s_3 * x + a_2 = (1) * 1333/1000 + -3
+      = -1667/1000
+  s_1 = s_2 * x + a_1 = (-1667/1000) * 1333/1000 + 3
+      = 777889/1000000
+  s_0 = s_1 * x + a_0 = (777889/1000000) * 1333/1000 + -1
+      = 36926037/1000000000
+
+Final exact result: 36926037/1000000000
+As decimal:         3.69260370000000018309e-02
+Factored form:      (1.333-1)^3 = 3.69260370000000018309e-02
+
+Test 5: Arbitrary Precision with VPA
+--------------------------------------------------------------------
+Computing (x-1)^20 at x = 1.333 with 50 digits precision
+
+Result with 50 decimal digits:
+0.0000000002811154210017743745796349926334794029379232905556
+
+Double precision (16 digits):
+  Classical:   -4.0105252452349305e-10
+  Compensated: 2.8111542100177365e-10
+  True value:  2.8111542100177437e-10
+
+Digits agreement with true value:
+  Exact:       0.00000000028111542100177437458
+  Classical:   -4.0105252452349305e-10 (WRONG SIGN)
+  Compensated: 2.8111542100177365e-10
+
+Test 6: Verify Symbolic Exactness
+--------------------------------------------------------------------
+Compare symbolic result with factored form
+
+Expanded form result:  16766496980638930547173449/1000000000000000000000000000000
+Factored form result:  16766496980638930547173449/1000000000000000000000000000000
+Difference:            0
+Are they equal?        (16766496980638930547173449*YES)/1000000000000000000000000000000 + (16766496980638930547173449/1000000000000000000000000000000 ~= 16766496980638930547173449/1000000000000000000000000000000)*NO == (16766496980638930547173449*YES)/1000000000000000000000000000000 + (16766496980638930547173449/1000000000000000000000000000000 ~= 16766496980638930547173449/1000000000000000000000000000000)*NO
+
+✓ Symbolic computation is EXACT!
+  No rounding errors whatsoever.
+
+Test 7: Complete Accuracy Comparison
+========================================================================
+Using symbolic computation as ground truth
+
+Deg |    Exact Value    | Classical      | Comp. Error   | Improvement
+----|-------------------|----------------|---------------|-------------
+  3 | 3.6926037000e-02 | 9.3957e-16     | 3.7583e-16    | 2.50e+00
+  5 | 4.0946913169e-03 | 2.9719e-13     | 4.2365e-16    | 7.01e+02
+  8 | 1.5120072307e-04 | 1.9903e-10     | 8.9633e-16    | 2.22e+05
+ 10 | 1.6766496981e-05 | 1.4152e-10     | 1.2125e-15    | 1.17e+05
+ 13 | 6.1912028787e-07 | 1.1727e-06     | 1.3681e-15    | 8.57e+08
+ 15 | 6.8653629601e-08 | 6.0528e-05     | 1.5422e-15    | 3.92e+10
+ 18 | 2.5351064668e-09 | 8.2503e-03     | 2.1209e-15    | 3.89e+12
+ 20 | 2.8111542100e-10 | 2.4266e+00     | 2.5747e-15    | 9.43e+14
+ 25 | 1.1510808734e-12 | 7.9539e+03     | 2.0306e-12    | 3.92e+15
+ 30 | 4.7133208574e-15 | 5.9950e+07     | 3.6384e-08    | 1.65e+15
+
+========================================================================
+SUMMARY: Symbolic vs Floating-Point
+========================================================================
+
+Key Findings:
+
+1. SYMBOLIC COMPUTATION:
+   - Provides TRUE exact values
+   - No rounding errors whatsoever
+   - Can compute with arbitrary precision (VPA)
+   - Much slower than floating-point
+
+2. CLASSICAL HORNER (Floating-point):
+   - Fast (2n flops)
+   - Fails catastrophically for cond > 10^14
+   - At n=20: produces WRONG SIGN
+   - Error: 243% (completely wrong)
+
+3. COMPENSATED HORNER (Floating-point):
+   - Moderate speed (26n flops)
+   - Near-exact for cond up to 10^20
+   - At n=20: error ~ 10^-16 (machine precision)
+   - Improvement: 10^15 times better than classical
+
+4. WHY COMPENSATED WORKS:
+   - Uses EFTs to track rounding errors EXACTLY
+   - Corrects errors in floating-point arithmetic
+   - Achieves error ~ u instead of error ~ cond*u
+   - Near-symbolic accuracy at floating-point speed
+
+========================================================================
+Conclusion: Compensated algorithms bridge the gap between
+fast-but-inaccurate floating-point and slow-but-exact symbolic math!
+========================================================================
+diary HornerSymbolic_results.txt
+HornerSymbolic_test
+========================================================================
+Symbolic vs Floating-Point Horner Schemes
+Using Exact Arithmetic as Ground Truth
+========================================================================
+
+Machine epsilon (eps): 2.2204e-16
+Unit roundoff (u):     1.1102e-16
+
+Test 1: Verification with Simple Polynomial
+--------------------------------------------------------------------
+p(x) = 1 + 2x + 3x^2 at x = 0.5
+
+Symbolic (exact):    11/4
+In decimal:          2.7500000000000000e+00
+Classical Horner:    2.7500000000000000e+00 (error: 0.0000e+00)
+Compensated Horner:  2.7500000000000000e+00 (error: 0.0000e+00)
+
+Test 2: (x-1)^n at x = 1.333 - Using Symbolic Ground Truth
+========================================================================
+
+Deg | True Exact Value      | Classical Error | Compensated Error | Ratio
+----|----------------------|-----------------|-------------------|---------
+  5 | 4.094691316893000e-03 | 1.2169e-15      | 1.7347e-18        | 7.02e+02
+ 10 | 1.676649698063893e-05 | 2.3728e-15      | 2.0329e-20        | 1.17e+05
+ 15 | 6.865362960133493e-08 | 4.1555e-12      | 1.0588e-22        | 3.92e+10
+ 20 | 2.811154210017744e-10 | 6.8217e-10      | 7.2378e-25        | 9.43e+14
+ 25 | 1.151080873420686e-12 | 9.1556e-09      | 2.3374e-24        | 3.92e+15
+ 30 | 4.713320857437292e-15 | 2.8256e-07      | 1.7149e-22        | 1.65e+15
+
+Note: Using symbolic math for TRUE exact values!
+
+Test 3: Extreme Detail at n=20
+--------------------------------------------------------------------
+
+TRUE EXACT VALUE (symbolic):
+  Symbolic: 281115421001774374579634992633479402937923290555601/1000000000000000000000000000000000000000000000000000000000000
+  Decimal:  2.81115421001774374208e-10
+
+CLASSICAL HORNER:
+  Result:   -4.01052524523493048036e-10
+  Error:    6.8217e-10
+COMPENSATED HORNER:
+  Result:   2.81115421001773650425e-10
+  Error:    7.2378e-25
+  Sign:     positive
+
+COMPARISON:
+  Classical is WRONG by: 6.82167945525267422244e-10
+  Compensated is WRONG by: 7.23783035983899215512e-25
+  Compensated is 9.43e+14 times more accurate!
+
+Test 4: Inside Symbolic Computation
+--------------------------------------------------------------------
+Computing (x-1)^3 at x = 1.333 symbolically
+
+Polynomial coefficients: [-1 3 -3 1 ]
+Expanded form: p(x) = -1x^0 + 3x^1 + -3x^2 + 1x^3
+              = 1 - 3x + 3x^2 - x^3
+
+x (exact rational): 1333/1000
+x (decimal):        1.3330000000000000e+00
+
+Horner steps (symbolic):
+  s_3 = 1
+  s_2 = s_3 * x + a_2 = (1) * 1333/1000 + -3
+      = -1667/1000
+  s_1 = s_2 * x + a_1 = (-1667/1000) * 1333/1000 + 3
+      = 777889/1000000
+  s_0 = s_1 * x + a_0 = (777889/1000000) * 1333/1000 + -1
+      = 36926037/1000000000
+
+Final exact result: 36926037/1000000000
+As decimal:         3.69260370000000018309e-02
+Factored form:      (1.333-1)^3 = 3.69260370000000018309e-02
+
+Test 5: Arbitrary Precision with VPA
+--------------------------------------------------------------------
+Computing (x-1)^20 at x = 1.333 with 50 digits precision
+
+Result with 50 decimal digits:
+0.0000000002811154210017743745796349926334794029379232905556
+
+Double precision (16 digits):
+  Classical:   -4.0105252452349305e-10
+  Compensated: 2.8111542100177365e-10
+  True value:  2.8111542100177437e-10
+
+Digits agreement with true value:
+  Exact:       0.00000000028111542100177437458
+  Classical:   -4.0105252452349305e-10 (WRONG SIGN)
+  Compensated: 2.8111542100177365e-10
+
+Test 6: Verify Symbolic Exactness
+--------------------------------------------------------------------
+Compare symbolic result with factored form
+
+Expanded form result:  16766496980638930547173449/1000000000000000000000000000000
+Factored form result:  16766496980638930547173449/1000000000000000000000000000000
+Difference:            0
+Are they equal?        (16766496980638930547173449*YES)/1000000000000000000000000000000 + (16766496980638930547173449/1000000000000000000000000000000 ~= 16766496980638930547173449/1000000000000000000000000000000)*NO == (16766496980638930547173449*YES)/1000000000000000000000000000000 + (16766496980638930547173449/1000000000000000000000000000000 ~= 16766496980638930547173449/1000000000000000000000000000000)*NO
+
+✓ Symbolic computation is EXACT!
+  No rounding errors whatsoever.
+
+Test 7: Complete Accuracy Comparison
+========================================================================
+Using symbolic computation as ground truth
+
+Deg |    Exact Value    | Classical      | Comp. Error   | Improvement
+----|-------------------|----------------|---------------|-------------
+  3 | 3.6926037000e-02 | 9.3957e-16     | 3.7583e-16    | 2.50e+00
+  5 | 4.0946913169e-03 | 2.9719e-13     | 4.2365e-16    | 7.01e+02
+  8 | 1.5120072307e-04 | 1.9903e-10     | 8.9633e-16    | 2.22e+05
+ 10 | 1.6766496981e-05 | 1.4152e-10     | 1.2125e-15    | 1.17e+05
+ 13 | 6.1912028787e-07 | 1.1727e-06     | 1.3681e-15    | 8.57e+08
+ 15 | 6.8653629601e-08 | 6.0528e-05     | 1.5422e-15    | 3.92e+10
+ 18 | 2.5351064668e-09 | 8.2503e-03     | 2.1209e-15    | 3.89e+12
+ 20 | 2.8111542100e-10 | 2.4266e+00     | 2.5747e-15    | 9.43e+14
+ 25 | 1.1510808734e-12 | 7.9539e+03     | 2.0306e-12    | 3.92e+15
+ 30 | 4.7133208574e-15 | 5.9950e+07     | 3.6384e-08    | 1.65e+15
+
+========================================================================
+SUMMARY: Symbolic vs Floating-Point
+========================================================================
+
+Key Findings:
+
+1. SYMBOLIC COMPUTATION:
+   - Provides TRUE exact values
+   - No rounding errors whatsoever
+   - Can compute with arbitrary precision (VPA)
+   - Much slower than floating-point
+
+2. CLASSICAL HORNER (Floating-point):
+   - Fast (2n flops)
+   - Fails catastrophically for cond > 10^14
+   - At n=20: produces WRONG SIGN
+   - Error: 243% (completely wrong)
+
+3. COMPENSATED HORNER (Floating-point):
+   - Moderate speed (26n flops)
+   - Near-exact for cond up to 10^20
+   - At n=20: error ~ 10^-16 (machine precision)
+   - Improvement: 10^15 times better than classical
+
+4. WHY COMPENSATED WORKS:
+   - Uses EFTs to track rounding errors EXACTLY
+   - Corrects errors in floating-point arithmetic
+   - Achieves error ~ u instead of error ~ cond*u
+   - Near-symbolic accuracy at floating-point speed
+
+========================================================================
+Conclusion: Compensated algorithms bridge the gap between
+fast-but-inaccurate floating-point and slow-but-exact symbolic math!
+========================================================================
+diary condp_results.txt
