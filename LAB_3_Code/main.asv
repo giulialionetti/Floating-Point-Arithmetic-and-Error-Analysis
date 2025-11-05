@@ -1,0 +1,4 @@
+clc
+addpath("G:\Il mio Drive\APPLIED MATHEMATICS\AFAE\intlab")
+startintlab
+
