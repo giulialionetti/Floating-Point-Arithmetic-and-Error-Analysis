@@ -5,14 +5,18 @@
 \usepackage{geometry}
 \usepackage{enumitem}
 \usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
 
 \geometry{margin=1in}
 
 \theoremstyle{definition}
-\newtheorem{definition}{Definition}[section]
 \newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{property}[theorem]{Property}
 
-\title{Conditioning Theory, Backward Stability, and Error Analysis}
+\title{Interval Arithmetic, Verification Methods, and Multiple Precision}
 \author{}
 \date{}
 
@@ -20,381 +24,419 @@
 
 \maketitle
 
-\noindent This document covers conditioning theory, backward stability, and the theoretical foundations of error analysis.
+\tableofcontents
+\newpage
 
-\section{Types of Errors in Computation}
+\section{Interval Arithmetic}
 
-\begin{enumerate}
-    \item \textbf{Measurement errors} -- in the initial data
-    \item \textbf{Modeling errors} -- approximating reality with mathematics
-    \item \textbf{Method errors} -- discretization, truncation in algorithms
-    \item \textbf{Rounding errors} -- finite precision arithmetic
-\end{enumerate}
+\subsection{Basic Interval Operations}
 
-\noindent \textbf{Key principle}: Numerical algorithms should be designed with rounding errors in mind from the beginning, not as an afterthought.
-
-\section{Well-Posed vs Ill-Posed Problems}
-
-\begin{definition}[Well-Posed Problem]
-A problem $(P)$: find $x$ such that $F(x) = y$ for given $y$ is \textbf{well-posed} if:
-\begin{enumerate}
-    \item A solution $x = F^{-1}(y)$ exists
-    \item The solution is unique
-    \item The solution depends continuously on the data $y$ (equivalent to $F^{-1}$ being continuous)
-\end{enumerate}
+\begin{definition}[Interval notation]
+\begin{equation}
+\mathbf{x} = [\underline{x}; \overline{x}] = \{x \in \mathbb{R} : \underline{x} \leq x \leq \overline{x}\}
+\end{equation}
 \end{definition}
 
-\noindent If any condition fails, the problem is \textbf{ill-posed} (e.g., solving $Ax = b$ with singular $A$).
+\begin{definition}[Midpoint and width]
+\begin{align}
+\text{mid}(\mathbf{x}) &= \frac{\overline{x} + \underline{x}}{2}\\
+w(\mathbf{x}) &= \overline{x} - \underline{x}
+\end{align}
+\end{definition}
 
-\section{Error Measurement}
+\subsection{Operations with Directed Rounding}
 
-\subsection{For Scalars}
+\subsubsection{Addition}
+\begin{equation}
+\mathbf{x} + \mathbf{y} = [\nabla(\underline{x} + \underline{y}), \Delta(\overline{x} + \overline{y})]
+\end{equation}
 
-Given an approximation $\hat{x}$ of a nonzero real number $x$:
+\subsubsection{Subtraction}
+\begin{equation}
+\mathbf{x} - \mathbf{y} = [\nabla(\underline{x} - \overline{y}), \Delta(\overline{x} - \underline{y})]
+\end{equation}
 
+\subsubsection{Multiplication}
+\begin{equation}
+\mathbf{x} \times \mathbf{y} = [\min\{\underline{x}\underline{y}, \underline{x}\overline{y}, \overline{x}\underline{y}, \overline{x}\overline{y}\}, \max\{\underline{x}\underline{y}, \underline{x}\overline{y}, \overline{x}\underline{y}, \overline{x}\overline{y}\}]
+\end{equation}
+
+\subsubsection{Division}
+
+If $0 \notin [\underline{y}, \overline{y}]$:
+\begin{equation}
+\mathbf{x}/\mathbf{y} = \mathbf{x} \times \frac{1}{\mathbf{y}}
+\end{equation}
+
+where
+\begin{equation}
+\frac{1}{\mathbf{x}} = [1/\overline{x}; 1/\underline{x}]
+\end{equation}
+
+\section{Interval Newton Method}
+
+\begin{definition}[Interval Newton operator]
+\begin{equation}
+N(\tilde{x}, \mathbf{X}) := \tilde{x} - \frac{f(\tilde{x})}{f'(\mathbf{X})}
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Convergence conditions]
+Let $\mathbf{X}$ be an interval and $\tilde{x} \in \mathbf{X}$. Assume $0 \notin f'(\mathbf{X})$.
 \begin{itemize}
-    \item \textbf{Absolute error}: $E_a(\hat{x}) = |x - \hat{x}| = |\Delta x|$
-    \item \textbf{Relative error}: $E_r(\hat{x}) = \frac{|x - \hat{x}|}{|x|} = \frac{|\Delta x|}{|x|}$
+    \item If $N(\tilde{x}, \mathbf{X}) \subset \mathbf{X}$, then $\mathbf{X}$ contains a \textbf{unique root} of $f$
+    \item If $N(\tilde{x}, \mathbf{X}) \cap \mathbf{X} = \emptyset$, then $\mathbf{X}$ contains \textbf{no roots} of $f$
 \end{itemize}
-
-\subsection{For Vectors}
-
-Given $\hat{x} \in \mathbb{R}^n$ approximating $x \in \mathbb{R}^n$:
-
-\begin{itemize}
-    \item \textbf{Absolute error}: $E_a(\hat{x}) = |\Delta x|$
-    \item \textbf{Relative error} (two variants):
-    \begin{itemize}
-        \item \textbf{Normwise}: $|\Delta x|_g = \frac{|\Delta x|}{|x|}$
-        \item \textbf{Componentwise}: $|\Delta x|_c = \max_i \frac{|\Delta x_i|}{|x_i|}$ (when $x_i \neq 0$)
-    \end{itemize}
-\end{itemize}
-
-\section{Conditioning Theory}
-
-\subsection{General Condition Number}
-
-For a well-posed problem where $x = G(y)$ with $G = F^{-1}$:
-
-If there's an error $\Delta y$ in the data, the computed value is $\hat{x} = G(y + \Delta y)$.
-
-For sufficiently small $\Delta y$:
-\begin{equation}
-\hat{x} - x \approx G'(y) \cdot \Delta y
-\end{equation}
-
-This leads to the \textbf{relative error relationship}:
-\begin{equation}
-\frac{|\hat{x} - x|}{|x|} = K(G, y) \cdot \frac{|\Delta y|}{|y|} + O(|\Delta y|^2)
-\end{equation}
-
-where the \textbf{condition number} is:
-\begin{equation}
-K(G, y) = \left|\frac{yG'(y)}{G(y)}\right|
-\end{equation}
-
-\noindent \textbf{Interpretation}: The condition number measures how much relative errors in the input are amplified in the output.
-
-\subsection{Condition Number for Polynomial Evaluation}
-
-\subsubsection{Case 1: Perturbing the evaluation point $z$}
-
-For $p(z) = \sum_{i=0}^{n} a_i z^i$ with $z \neq 0$:
-\begin{equation}
-K(p, z) = \frac{|zp'(z)|}{|p(z)|}
-\end{equation}
-
-\noindent \textbf{Key observation}: The condition number approaches infinity as $z$ approaches a root of $p$. Thus, evaluating a polynomial near its roots is inherently ill-conditioned.
-
-\subsubsection{Case 2: Perturbing the coefficients}
-
-When coefficients $a = (a_0, \ldots, a_n)^T$ are perturbed by $\Delta a$ with:
-
-\begin{itemize}
-    \item Data norm: $|\Delta a|_D = \max_{i=0:n} |\Delta a_i|/|a_i|$ (relative componentwise)
-    \item Result norm: $|\Delta x|_R = |\Delta x|/|x|$ (relative absolute)
-\end{itemize}
-
-The \textbf{condition number} is:
-\begin{equation}
-K(p(z), a) = \frac{\sum_{i=0}^{n} |a_i z^i|}{|p(z)|} = \frac{\tilde{p}(|z|)}{|p(z)|}
-\end{equation}
-
-where $\tilde{p}(|z|) = \sum_{i=0}^{n} |a_i||z|^i$ is the polynomial with absolute value coefficients.
-
-\noindent \textbf{Important}: This condition number is also particularly large near roots of $p$.
-
-\subsection{Conditioning for Linear Systems}
-
-For the system $Ax = b$ where $A$ is nonsingular:
-
-If $x$ solves $Ax = b$ and $\hat{x} = x + \Delta x$ solves $Ax = b + \Delta b$:
-
-\begin{equation}
-A\Delta x = \Delta b \implies \Delta x = A^{-1}\Delta b
-\end{equation}
-
-This gives:
-\begin{equation}
-|\Delta x| \leq |A^{-1}||\Delta b|
-\end{equation}
-
-Since $|Ax| = |b| \geq \frac{|b|}{|A|}$, we have $|x| \geq \frac{|b|}{|A|}$
-
-Therefore:
-\begin{equation}
-\frac{|\Delta x|}{|x|} \leq |A||A^{-1}| \frac{|\Delta b|}{|b|}
-\end{equation}
-
-\subsection{Matrix Condition Number}
-
-The \textbf{condition number} of matrix $A$ is:
-\begin{equation}
-\kappa(A) = |A||A^{-1}|
-\end{equation}
-
-\subsubsection{Perturbations in $A$}
-
-If $x + \Delta x$ solves $(A + \Delta A)x = b$:
-\begin{equation}
-\frac{|\Delta x|}{|x|} \leq \kappa(A) \frac{|\Delta A|}{|A|}
-\end{equation}
-
-\subsubsection{Perturbations in both $A$ and $b$}
-
-If $x + \Delta x$ solves $(A + \Delta A)x = b + \Delta b$:
-\begin{equation}
-\frac{|\Delta x|}{|x|} \leq \frac{\kappa(A)}{1 - \kappa(A)\frac{|\Delta A|}{|A|}} \left(\frac{|\Delta A|}{|A|} + \frac{|\Delta b|}{|b|}\right)
-\end{equation}
-
-\subsection{Remarks on Condition Numbers}
-
-\begin{enumerate}
-    \item \textbf{Norm dependence}: The condition number depends on the choice of norm
-    \item \textbf{Distance to singularity}: Generally measures the inverse distance to singularity
-    \item \textbf{Problem property}: Depends only on the problem, not on the algorithm
-    \item \textbf{First-order analysis}: Only considers infinitesimal perturbations
-\end{enumerate}
-
-\section{Forward vs Backward Error Analysis}
-
-\subsection{Forward Error Analysis}
-
-\noindent \textbf{Approach}: Track the propagation of rounding errors through each operation in algorithm $\hat{G}$ applied to input $y$.
-
-\noindent \textbf{Result}: Provides an upper bound on the gap between exact solution $x$ and computed solution $\hat{x}$ (the forward error).
-
-\noindent \textbf{Answers}: ``To what accuracy is the problem solved?''
-
-\noindent \textbf{Disadvantage}: Tracking intermediate error propagation becomes complicated quickly and leads to expressions that are difficult to exploit.
-
-\subsection{Backward Error Analysis}
-
-\noindent \textbf{Approach}: A two-stage process:
-
-\noindent \textbf{Stage 1}: Identify the computed approximation $\hat{x}$ as the exact evaluation of $G$ at perturbed data $(y + \Delta y)$:
-\begin{equation}
-\hat{x} = G(y + \Delta y)
-\end{equation}
-
-The error $\Delta y$ is the \textbf{backward error}. This answers: ``Which problem was actually solved?''
-
-\noindent \textbf{Stage 2}: Since the backward error $\Delta y$ is estimated or bounded, analyze the effect using conditioning theory:
-\begin{equation}
-\text{forward error} \lesssim \text{condition number} \times \text{backward error}
-\end{equation}
-
-\noindent \textbf{Advantages}:
-
-\begin{itemize}
-    \item Cleaner analysis than forward error
-    \item Separates algorithm reliability (backward error) from problem difficulty (conditioning)
-    \item Provides natural definition of stability
-\end{itemize}
-
-\subsection{The Backward Error}
-
-The \textbf{backward error} associated with computed solution $\hat{x} = \hat{G}(y)$ is:
-\begin{equation}
-\eta(\hat{x}) = \min_{\Delta y \in D} \{|\Delta y|_D : \hat{x} = G(y + \Delta y)\}
-\end{equation}
-
-It measures the smallest perturbation to the data that makes $\hat{x}$ the exact solution.
-
-\subsection{Key Relationship}
-
-At first order:
-\begin{equation}
-\text{forward error} \lesssim \text{cond}(P, y) \times \eta(\hat{x})
-\end{equation}
-
-\section{Stability of Algorithms}
-
-\subsection{Definition: Backward Stability}
-
-An algorithm is \textbf{backward stable} for solving problem $(P)$ if the computed solution $\hat{x}$ has a small backward error $\eta(\hat{x})$.
-
-More specifically, an algorithm is backward stable in finite precision (with unit roundoff $u$) if:
-\begin{equation}
-\eta(\hat{x}) = O(u)
-\end{equation}
-
-\subsection{Interpretation}
-
-A backward-stable algorithm:
-
-\begin{itemize}
-    \item Computes the \textbf{exact solution} of a slightly perturbed problem
-    \item The perturbation is small enough that the perturbed and exact problems are indistinguishable at the working precision
-    \item Introduces no more error than is intrinsic to representing the data in finite precision
-    \item Makes optimal use of the available computer precision
-\end{itemize}
-
-\noindent \textbf{Important}: Backward stability does NOT guarantee that the solution is accurate---only that it's as accurate as the conditioning of the problem allows.
-
-\subsection{Accuracy of Backward-Stable Algorithms}
-
-For a backward-stable algorithm with backward error $\eta(\hat{x}) \approx u$:
-\begin{equation}
-|\Delta x| \lesssim K \cdot u
-\end{equation}
-
-where $K$ is the condition number.
-
-\noindent \textbf{Ill-conditioned problem}: A problem with relative accuracy $u$ is ill-conditioned if its condition number $K$ satisfies:
-\begin{equation}
-K \times u \geq 1
-\end{equation}
-
-In this case, even a backward-stable algorithm may produce results with large forward error.
-
-\section{Standard Model for Floating-Point Arithmetic}
-
-\subsection{Rounding Function}
-
-Let $\text{fl}: \mathbb{R} \to \mathbb{F}$ map real numbers to floating-point numbers.
-
-A \textbf{rounding} satisfies:
-
-\begin{enumerate}
-    \item $\text{fl}(x) = x$ for all $x \in \mathbb{F}$ (exactness)
-    \item $\text{fl}(x) \leq \text{fl}(y)$ for all $x \leq y$ (monotonicity)
-\end{enumerate}
-
-\noindent \textbf{Rounding modes}:
-
-\begin{itemize}
-    \item \textbf{Round to nearest}: $\text{fl}(x) = \arg\min_{y \in \mathbb{F}} |x - y|$
-    \item \textbf{Directed rounding}: toward $0$, $+\infty$, or $-\infty$
-\end{itemize}
-
-\subsection{Fundamental Theorem}
-
-\begin{theorem}
-For any $x \in \mathbb{R}$:
-\begin{equation}
-\text{fl}(x) = x(1 + \delta), \quad |\delta| \leq u
-\end{equation}
-
-where $u$ is the \textbf{unit roundoff}:
-
-\begin{itemize}
-    \item $u = \varepsilon/2$ for round-to-nearest
-    \item $u = \varepsilon$ for directed rounding
-\end{itemize}
-
-Here $\varepsilon = \beta^{1-p}$ is the machine epsilon ($p$ = precision, $\beta$ = base).
 \end{theorem}
 
-\subsection{Standard Model for Operations}
+\section{Fixed Point Theorem (Brouwer)}
 
-For basic operations $\circ \in \{+, -, \times, /\}$:
+\subsection{For Nonlinear Systems}
 
-\noindent \textbf{Multiplicative form}:
+For nonlinear systems:
 \begin{equation}
-\text{fl}(x \circ y) = (x \circ y)(1 + \delta), \quad |\delta| \leq u
+f(\mathbf{x}) = 0 \Leftrightarrow g(\mathbf{x}) = \mathbf{x}
 \end{equation}
 
-\noindent \textbf{Divisive form}:
+where
 \begin{equation}
-\text{fl}(x \circ y) = \frac{x \circ y}{1 + \delta'}, \quad |\delta'| \leq u
+g(\mathbf{x}) := \mathbf{x} - Rf(\mathbf{x}) \quad \text{with } \det(R) \neq 0
 \end{equation}
 
-These are equivalent to first order since $(1 + \delta)^{-1} \approx 1 - \delta$ for small $\delta$.
-
-\subsection{Model With Underflow}
-
-To account for possible underflow (or overflow):
+\begin{theorem}[Key result]
 \begin{equation}
-\text{fl}(x \circ y) = (x \circ y)(1 + \delta) + \eta
+\mathbf{X} \in \mathbb{IR}^n, \quad g(\mathbf{X}) \subseteq \mathbf{X} \quad \Rightarrow \quad \exists \hat{\mathbf{x}} \in \mathbf{X}, \quad g(\hat{\mathbf{x}}) = \hat{\mathbf{x}}
+\end{equation}
+\end{theorem}
+
+\subsection{Mean Value Form}
+
+\begin{equation}
+-Rf(\tilde{\mathbf{x}}) + (I - RM)\mathbf{Y} \subseteq \mathbf{Y} \quad \Rightarrow \quad g(\mathbf{X}) \subseteq \mathbf{X}
 \end{equation}
 
-where $|\delta| \leq u$, $|\eta| \leq \underline{u}$, and $\delta \cdot \eta = 0$.
+where $M$ is an interval matrix containing all Jacobians in $\mathbf{X}$.
 
+\section{Matrix Nonsingularity Test}
+
+\begin{theorem}
+\begin{equation}
+|I - RA| < 1 \quad \Rightarrow \quad A \text{ is nonsingular}
+\end{equation}
+\end{theorem}
+
+\noindent \textbf{Application}: Choose $R \approx A^{-1}$ and compute $|I - RA|$ with interval arithmetic.
+
+\section{Verification of Nonlinear Systems}
+
+\begin{theorem}[Verification theorem for nonlinear systems]
+Let $f : \mathbb{R}^n \to \mathbb{R}^n$ with $f \in C^1$, $\tilde{\mathbf{x}} \in \mathbb{R}^n$, $\mathbf{X} \in \mathbb{IR}^n$ with $0 \in \mathbf{X}$.
+
+Let $M \in \mathbb{IR}^{n \times n}$ such that:
+\begin{equation}
+\{\nabla f_i(\zeta) : \zeta \in \tilde{\mathbf{x}} + \mathbf{X}\} \subseteq M_{i,:}
+\end{equation}
+
+\textbf{If}:
+\begin{equation}
+-Rf(\tilde{\mathbf{x}}) + (I - RM)\mathbf{X} \subseteq \text{int}(\mathbf{X})
+\end{equation}
+
+\textbf{Then}:
 \begin{itemize}
-    \item If underflow occurs: $\delta = 0$, $\eta \neq 0$
-    \item Otherwise: $\eta = 0$, $\delta \neq 0$
+    \item There exists a \textbf{unique} $\hat{\mathbf{x}} \in \tilde{\mathbf{x}} + \mathbf{X}$ with $f(\hat{\mathbf{x}}) = 0$
+    \item The Jacobian $J_f(\hat{\mathbf{x}})$ is nonsingular
+\end{itemize}
+\end{theorem}
+
+\section{Multiple Roots Verification}
+
+For double roots, solve the system:
+\begin{equation}
+G(\mathbf{x}, e) = \begin{pmatrix} f(x) - e \\ f'(x) \end{pmatrix} = 0
+\end{equation}
+
+\noindent \textbf{Jacobian}:
+\begin{equation}
+J_G(x, e) = \begin{pmatrix} f'(x) & -1 \\ f''(x) & 0 \end{pmatrix}
+\end{equation}
+
+This system is \textbf{well-conditioned} for double roots (avoids the ill-conditioning).
+
+\section{Multiple Precision Arithmetic}
+
+\subsection{Double-Double Numbers}
+
+\begin{definition}[Double-double]
+A \textbf{double-double} is a pair $(a_h, a_l)$ satisfying:
+\begin{equation}
+a = a_h + a_l \quad \text{and} \quad |a_l| \leq u|a_h|
+\end{equation}
+where $u$ is the unit roundoff of the base precision.
+\end{definition}
+
+\begin{theorem}[Error bound for double-double operations]
+\begin{equation}
+\text{fl}(a \odot b) = (1 + \delta)(a \odot b), \quad |\delta| \leq 4 \cdot 2^{-106}
+\end{equation}
+where $\odot \in \{+, \times\}$
+\end{theorem}
+
+\noindent \textbf{Precision}: Double-double in IEEE 754 double precision gives approximately \textbf{106 bits} of precision (double the 53 bits of standard double precision).
+
+\subsection{Representation Formats}
+
+\subsubsection{Multiprecision number}
+\begin{equation}
+s \cdot m \cdot \beta^e
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $s$: sign
+    \item $m$: mantissa (arbitrary length)
+    \item $\beta$: base (typically 2)
+    \item $e$: exponent
 \end{itemize}
 
-\noindent \textbf{For IEEE 754 double precision (binary64) with round-to-nearest}:
+\subsubsection{With integers}
+\begin{equation}
+m = \sum_{i=0}^{n} m_i B^i
+\end{equation}
+where $m_i$ are machine integers and $B$ is the word size.
 
+\subsubsection{With expansions}
+\begin{equation}
+x = \sum_{i=0}^{n} f_i
+\end{equation}
+where $f_i$ are floating-point numbers with non-overlapping mantissas.
+
+\section{Kulisch Accumulator}
+
+\noindent \textbf{Purpose}: Compute exact sum/dot product without rounding errors.
+
+\subsection{Register Length}
+
+For exact dot product (double precision):
+\begin{equation}
+L = k + 2e_{\max} + 2|e_{\min}| + 2n = 4288 \text{ bits}
+\end{equation}
+
+where:
 \begin{itemize}
-    \item $u = 2^{-53} \approx 1.11 \times 10^{-16}$
-    \item $\underline{u} = 2^{-1074} \approx 4.94 \times 10^{-324}$
+    \item $n = 53$ bits (mantissa precision)
+    \item $e_{\min} = -1022$ (minimum exponent)
+    \item $e_{\max} = 1023$ (maximum exponent)
+    \item $k = 92$ bits (for products: $2n - 2 = 104$ rounded up)
 \end{itemize}
 
-\section{Summary of Key Concepts}
+\noindent \textbf{Key property}: All intermediate results fit exactly in the accumulator, so only one rounding occurs at the end.
 
-\subsection{The Three Pillars of Error Analysis}
+\section{Error Analysis}
+
+\subsection{Forward vs Backward Error}
+
+\begin{equation}
+\text{forward error} \approx \text{condition number} \times \text{backward error}
+\end{equation}
+
+\subsubsection{Number of Correct Digits}
+\begin{equation}
+\text{Number of correct digits} = -\log_{10}(\text{forward error})
+\end{equation}
+
+\noindent \textbf{Rule of thumb}:
+\begin{equation}
+\text{Number of correct digits} \approx -\log_{10}(u) - \log_{10}(\kappa)
+\end{equation}
+where $u$ is the unit roundoff and $\kappa$ is the condition number.
+
+\subsection{Multiple Roots}
+
+\noindent \textbf{Key insight}: Forward error is $O(u^{1/m})$
+
+\begin{itemize}
+    \item Single root ($m=1$): error $\sim u$ \checkmark\ well-conditioned
+    \item Double root ($m=2$): error $\sim \sqrt{u}$ \texttimes\ ill-conditioned
+    \item Triple root ($m=3$): error $\sim u^{1/3}$ \texttimes\texttimes\ very ill-conditioned
+\end{itemize}
+
+\noindent \textbf{Multiple roots are always ill-conditioned!}
+
+\section{Key Algorithms}
+
+\subsection{TwoSum (Error-Free Transformation)}
+
+\begin{algorithm}[H]
+\caption{TwoSum}
+\begin{algorithmic}[1]
+\Function{TwoSum}{$a, b$}
+    \State $s \gets \text{fl}(a + b)$
+    \State $z \gets \text{fl}(s - a)$
+    \State $t \gets \text{fl}(b - z)$
+    \State \Return $(s, t)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{property}
+$s + t = a + b$ (exact), where $s$ is the rounded sum and $t$ is the rounding error.
+\end{property}
+
+\subsection{FastTwoSum (when $|a| \geq |b|$)}
+
+\begin{algorithm}[H]
+\caption{FastTwoSum}
+\begin{algorithmic}[1]
+\Function{FastTwoSum}{$a, b$}
+    \State $s \gets \text{fl}(a + b)$
+    \State $z \gets \text{fl}(s - a)$
+    \State $t \gets \text{fl}(b - z)$
+    \State \Return $(s, t)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{property}
+Same as TwoSum but requires $|a| \geq |b|$. One fewer operation than TwoSum.
+\end{property}
+
+\noindent \textbf{Critical}: Uses \textbf{Sterbenz's lemma}: if $a/2 \leq b \leq 2a$, then $a - b$ is exact.
+
+\subsection{TwoProduct (Error-Free Transformation)}
+
+\begin{algorithm}[H]
+\caption{TwoProduct}
+\begin{algorithmic}[1]
+\Function{TwoProduct}{$a, b$}
+    \State $p \gets \text{fl}(a \times b)$
+    \State $e \gets \text{FMA}(a, b, -p)$ \Comment{or use Dekker's algorithm}
+    \State \Return $(p, e)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{property}
+$p + e = a \times b$ (exact), where $p$ is the rounded product and $e$ is the error.
+\end{property}
+
+\section{Condition Numbers (Quick Reference)}
+
+\subsection{For Different Problems}
+
+\subsubsection{Summation}
+\begin{equation}
+\text{cond}\left(\sum p_i\right) = \frac{\sum |p_i|}{|\sum p_i|}
+\end{equation}
+
+\subsubsection{Matrix-vector product}
+\begin{equation}
+\text{cond}(Ax) \leq |A| |x| / |Ax|
+\end{equation}
+
+\subsubsection{Linear systems ($Ax = b$)}
+\begin{equation}
+\kappa(A) = |A| |A^{-1}|
+\end{equation}
+
+\subsubsection{Polynomial evaluation at $x$}
+\begin{equation}
+\text{cond}(p, x) = \frac{\tilde{p}(|x|)}{|p(x)|}
+\end{equation}
+where $\tilde{p}$ has absolute value coefficients.
+
+\subsubsection{Polynomial root (simple root $\alpha$)}
+\begin{equation}
+K(p, \alpha) = \frac{\tilde{p}(|\alpha|)}{|\alpha| |p'(\alpha)|}
+\end{equation}
+
+\section{Common Error Bounds}
+
+\subsection{Summation (Recursive)}
+
+\begin{equation}
+\left|\frac{\tilde{s} - s}{s}\right| \leq nu \cdot \text{cond}\left(\sum p_i\right)
+\end{equation}
+
+where $n$ is the number of terms and $u$ is the unit roundoff.
+
+\subsection{Matrix Multiplication}
+
+\subsubsection{Inner product $x^T y$}
+\begin{equation}
+\text{fl}(x^T y) = \sum_{i=1}^n x_i y_i (1 + \theta_i), \quad |\theta_i| \leq nu
+\end{equation}
+
+\subsubsection{Matrix-matrix $AB$}
+\begin{equation}
+\text{fl}(AB)_{ij} = \sum_{k=1}^n a_{ik} b_{kj} (1 + \theta_{ijk}), \quad |\theta_{ijk}| \leq nu
+\end{equation}
+
+\subsection{Linear Systems}
+
+\subsubsection{LU factorization}
+\begin{equation}
+\text{fl}(LU) = A + E, \quad |E| \leq nu |A|
+\end{equation}
+
+\subsubsection{Forward error after solving}
+\begin{equation}
+\frac{|\tilde{x} - x|}{|x|} \lesssim \kappa(A) \cdot u
+\end{equation}
+
+\subsubsection{Iterative refinement (one iteration)}
+\begin{equation}
+\frac{|\tilde{x} - x|}{|x|} \lesssim \kappa(A)^2 \cdot u
+\end{equation}
+
+\section{Key Symbols and Notation}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} \\
+\midrule
+$\nabla$ & Rounding toward $-\infty$ (round down) \\
+$\Delta$ & Rounding toward $+\infty$ (round up) \\
+$\mathbb{IR}$ & Set of intervals \\
+$u$ & Unit roundoff (machine epsilon) \\
+& \quad fp64: $u = 2^{-53} \approx 1.11 \times 10^{-16}$ \\
+& \quad fp32: $u = 2^{-24} \approx 5.96 \times 10^{-8}$ \\
+& \quad fp16: $u = 2^{-11} \approx 4.88 \times 10^{-4}$ \\
+$\text{int}(\mathbf{X})$ & Interior of interval $\mathbf{X}$ \\
+$\kappa(A)$ & Condition number of matrix $A$ \\
+$\text{fl}(x)$ & Floating-point representation of $x$ \\
+$\tilde{x}$ & Computed (approximate) value \\
+$\hat{x}$ & Exact value \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Quick Tips for the Exam}
 
 \begin{enumerate}
-    \item \textbf{Condition Number}: Measures problem difficulty (sensitivity to input perturbations)
-    \item \textbf{Backward Error}: Measures algorithm reliability (equivalent input perturbation)
-    \item \textbf{Forward Error}: Measures solution accuracy (actual error in result)
-\end{enumerate}
-
-\subsection{The Fundamental Relationship}
-
-\begin{equation}
-\text{Forward Error} \lesssim \text{Condition Number} \times \text{Backward Error}
-\end{equation}
-
-This separates:
-
-\begin{itemize}
-    \item \textbf{What we can't control}: Condition number (inherent to the problem)
-    \item \textbf{What we can control}: Backward error (depends on algorithm design)
-\end{itemize}
-
-\subsection{Design Principles}
-
-\begin{enumerate}
-    \item \textbf{For well-conditioned problems} ($K \approx 1$): Most reasonable algorithms work well
-    \item \textbf{For ill-conditioned problems} ($K \gg 1$):
+    \item \textbf{Always check}: Is the problem well-conditioned? ($\kappa \ll 1/u$)
+    
+    \item \textbf{Multiple roots}: Reformulate using the $G(x, e)$ system to avoid ill-conditioning
+    
+    \item \textbf{Interval Newton}: Check $0 \notin f'(\mathbf{X})$ before claiming uniqueness
+    
+    \item \textbf{Directed rounding}:
     \begin{itemize}
-        \item Backward stability is essential
-        \item Even then, accuracy may be limited by $K \cdot u$
-        \item Reformulating the problem may help
+        \item Round down for lower bounds: $\nabla$
+        \item Round up for upper bounds: $\Delta$
     \end{itemize}
-    \item \textbf{Ultimate goal}: Backward-stable algorithms that achieve $\eta(\hat{x}) = O(u)$
+    
+    \item \textbf{Double-double}: Gives $\sim2\times$ precision ($\sim106$ bits vs 53 bits)
+    
+    \item \textbf{Iterative refinement}: Needs high-precision residual ($u_r$) to converge
+    
+    \item \textbf{Error accumulation}:
+    \begin{itemize}
+        \item Worst case: $O(nu)$
+        \item Probabilistic: $O(\sqrt{n}u)$ with random rounding
+    \end{itemize}
 \end{enumerate}
-
-\subsection{Practical Implications}
-
-\begin{itemize}
-    \item \textbf{Backward stability} is a gold standard for algorithm quality
-    \item A backward-stable algorithm is ``as good as it gets'' given the problem's conditioning
-    \item Poor accuracy with a backward-stable algorithm indicates an ill-conditioned problem, not a bad algorithm
-    \item Sometimes problem reformulation is necessary to avoid ill-conditioning
-\end{itemize}
-
-This framework provides a systematic way to:
-
-\begin{itemize}
-    \item Analyze numerical algorithms
-    \item Understand limitations of finite precision
-    \item Design robust numerical software
-    \item Diagnose sources of inaccuracy in computations
-\end{itemize}
 
 \end{document}
