@@ -1,0 +1,570 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{tcolorbox}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+\lstset{
+    language=C,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny,
+    frame=single,
+    breaklines=true
+}
+
+\title{Tutorial 1 - Introduction to Computer Arithmetic\\
+Solutions to Exercise 5 (Parts 1 and 3)}
+\author{Floating-point Arithmetic and Error Analysis (AFAE)}
+\date{Master of Computer Science 2nd year - CCA\\
+Year 2025/2026}
+
+\begin{document}
+
+\maketitle
+
+\section*{Exercise 5: Floating-Point Arithmetic}
+
+\subsection*{IEEE-754 Double Precision Format Reminder}
+
+IEEE-754 double precision (binary64) format consists of:
+\begin{itemize}
+    \item \textbf{1 bit} for sign ($s$)
+    \item \textbf{11 bits} for biased exponent ($e$), bias = $2^{11-1} - 1 = 1023$
+    \item \textbf{52 bits} for mantissa/significand ($f$)
+\end{itemize}
+
+\noindent Memory layout (64 bits total):
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Sign (1 bit) & Exponent (11 bits) & Mantissa (52 bits) \\
+\hline
+63 & 62--52 & 51--0 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection*{Value Interpretation}
+
+For \textbf{normalized numbers} ($1 \leq e \leq 2046$):
+\begin{equation}
+\text{value} = (-1)^s \times 2^{e-1023} \times (1.f)
+\end{equation}
+
+For \textbf{subnormal numbers} ($e = 0$, $f \neq 0$):
+\begin{equation}
+\text{value} = (-1)^s \times 2^{-1022} \times (0.f)
+\end{equation}
+
+\textbf{Special values}:
+\begin{itemize}
+    \item Zero: $e = 0$, $f = 0$ (signed: $\pm 0$)
+    \item Infinity: $e = 2047$, $f = 0$ (signed: $\pm \infty$)
+    \item NaN: $e = 2047$, $f \neq 0$
+\end{itemize}
+
+\newpage
+
+\section{Problem 1: Decode IEEE-754 Double Precision Numbers}
+
+\subsection*{Problem Statement}
+
+Decode by hand the following double precision numbers given in hexadecimal:
+
+\begin{enumerate}
+    \item \texttt{0x3ff0000000000000}
+    \item \texttt{0x0000000000000000}
+    \item \texttt{0x8000000000000000}
+    \item \texttt{0x0000000000000001}
+    \item \texttt{0xc00a000000000000}
+    \item \texttt{0x3ff6a09e667f3bcd}
+    \item \texttt{0x7ff0000000000000}
+\end{enumerate}
+
+\subsection*{Solution}
+
+\subsubsection*{1. \texttt{0x3ff0000000000000}}
+
+\paragraph{Binary representation:}
+\begin{align*}
+\text{Hex: } &\texttt{3ff0 0000 0000 0000}_{16}\\
+\text{Binary: } &\texttt{0011 1111 1111 0000 \ldots 0000}_2
+\end{align*}
+
+\paragraph{Decomposition:}
+\begin{itemize}
+    \item Sign bit: $s = 0$ (positive)
+    \item Exponent bits: $\texttt{011 1111 1111}_2 = 1023_{10}$
+    \item Mantissa bits: all zeros
+\end{itemize}
+
+\paragraph{Calculation:}
+\begin{align}
+e &= 1023\\
+\text{True exponent} &= e - 1023 = 0\\
+\text{Mantissa} &= 1.0 \text{ (implicit leading 1, all fraction bits are 0)}\\
+\text{Value} &= (-1)^0 \times 2^{0} \times 1.0 = \boxed{1.0}
+\end{align}
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Answer]
+\texttt{0x3ff0000000000000} = \textbf{1.0}
+\end{tcolorbox}
+
+\subsubsection*{2. \texttt{0x0000000000000000}}
+
+\paragraph{Binary representation:}
+\begin{align*}
+\text{All bits are 0}
+\end{align*}
+
+\paragraph{Decomposition:}
+\begin{itemize}
+    \item Sign bit: $s = 0$
+    \item Exponent bits: all zeros ($e = 0$)
+    \item Mantissa bits: all zeros ($f = 0$)
+\end{itemize}
+
+\paragraph{Special case:}
+When $e = 0$ and $f = 0$, this represents \textbf{zero}.
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Answer]
+\texttt{0x0000000000000000} = \textbf{+0.0} (positive zero)
+\end{tcolorbox}
+
+\subsubsection*{3. \texttt{0x8000000000000000}}
+
+\paragraph{Binary representation:}
+\begin{align*}
+\text{Hex: } &\texttt{8000 0000 0000 0000}_{16}\\
+\text{Binary: } &\texttt{1000 0000 0000 0000 \ldots 0000}_2
+\end{align*}
+
+\paragraph{Decomposition:}
+\begin{itemize}
+    \item Sign bit: $s = 1$ (negative)
+    \item Exponent bits: all zeros ($e = 0$)
+    \item Mantissa bits: all zeros ($f = 0$)
+\end{itemize}
+
+\paragraph{Special case:}
+When $e = 0$ and $f = 0$, with sign bit = 1, this represents \textbf{negative zero}.
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Answer]
+\texttt{0x8000000000000000} = \textbf{-0.0} (negative zero)
+\end{tcolorbox}
+
+\subsubsection*{4. \texttt{0x0000000000000001}}
+
+\paragraph{Binary representation:}
+\begin{align*}
+\text{Hex: } &\texttt{0000 0000 0000 0001}_{16}\\
+\text{Binary: } &\texttt{0000 \ldots 0001}_2
+\end{align*}
+
+\paragraph{Decomposition:}
+\begin{itemize}
+    \item Sign bit: $s = 0$ (positive)
+    \item Exponent bits: all zeros ($e = 0$)
+    \item Mantissa bits: only the last bit is 1
+\end{itemize}
+
+\paragraph{Calculation (Subnormal):}
+Since $e = 0$ but $f \neq 0$, this is a \textbf{subnormal number}.
+
+\begin{align}
+\text{Mantissa} &= 0.\underbrace{00\ldots01}_{52 \text{ bits}} = 2^{-52}\\
+\text{Value} &= (-1)^0 \times 2^{-1022} \times 2^{-52}\\
+&= 2^{-1074}\\
+&\approx 4.94 \times 10^{-324}
+\end{align}
+
+This is the \textbf{smallest positive subnormal number} in IEEE-754 double precision.
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Answer]
+\texttt{0x0000000000000001} = $\boxed{2^{-1074} \approx 4.94 \times 10^{-324}}$
+
+This is the smallest positive representable number (machine epsilon for subnormals).
+\end{tcolorbox}
+
+\subsubsection*{5. \texttt{0xc00a000000000000}}
+
+\paragraph{Binary representation:}
+\begin{align*}
+\text{Hex: } &\texttt{c00a 0000 0000 0000}_{16}\\
+\text{Binary: } &\texttt{1100 0000 0000 1010 0000 \ldots 0000}_2
+\end{align*}
+
+\paragraph{Decomposition:}
+\begin{itemize}
+    \item Sign bit: $s = 1$ (negative)
+    \item Exponent bits: $\texttt{100 0000 0000}_2 = 1024_{10}$
+    \item Mantissa bits: $\texttt{0000 1010 0000...}_2$
+\end{itemize}
+
+\paragraph{Calculation:}
+\begin{align}
+e &= 1024\\
+\text{True exponent} &= e - 1023 = 1\\
+\text{Mantissa} &= 1.\texttt{0000101000...}_2 = 1 + \frac{1}{2^5} + \frac{1}{2^7}\\
+&= 1 + 0.03125 + 0.0078125\\
+&= 1 + \frac{5}{128} = 1 + \frac{10}{256} = \frac{266}{256} = 1.0390625\\
+\text{Value} &= (-1)^1 \times 2^{1} \times 1.0390625\\
+&= -2 \times 1.0390625\\
+&= -2.078125\\
+&= \boxed{-\frac{133}{64}}
+\end{align}
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Answer]
+\texttt{0xc00a000000000000} = \textbf{-2.078125} = $-\frac{133}{64}$
+\end{tcolorbox}
+
+\subsubsection*{6. \texttt{0x3ff6a09e667f3bcd}}
+
+\paragraph{Binary representation:}
+\begin{align*}
+\text{Hex: } &\texttt{3ff6 a09e 667f 3bcd}_{16}
+\end{align*}
+
+\paragraph{Decomposition:}
+\begin{itemize}
+    \item Sign bit: $s = 0$ (positive)
+    \item Exponent bits: $\texttt{011 1111 1111}_2 = 1023_{10}$
+    \item Mantissa bits: $\texttt{0110101000001001...}$
+\end{itemize}
+
+\paragraph{Calculation:}
+\begin{align}
+e &= 1023\\
+\text{True exponent} &= e - 1023 = 0\\
+\text{Mantissa in hex} &= 1.\texttt{6a09e667f3bcd}_{16}
+\end{align}
+
+Converting the fractional part:
+\begin{align}
+\texttt{6a09e667f3bcd}_{16} &= \frac{\texttt{6a09e667f3bcd}_{16}}{2^{52}}\\
+&\approx 0.41421356237309515
+\end{align}
+
+Therefore:
+\begin{align}
+\text{Value} &= 2^0 \times (1 + 0.41421356237309515)\\
+&= 1.41421356237309515\\
+&\approx \boxed{\sqrt{2}}
+\end{align}
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Answer]
+\texttt{0x3ff6a09e667f3bcd} $\approx$ \textbf{1.4142135623730951} $\approx \sqrt{2}$
+
+This is the IEEE-754 double precision representation of $\sqrt{2}$.
+\end{tcolorbox}
+
+\subsubsection*{7. \texttt{0x7ff0000000000000}}
+
+\paragraph{Binary representation:}
+\begin{align*}
+\text{Hex: } &\texttt{7ff0 0000 0000 0000}_{16}\\
+\text{Binary: } &\texttt{0111 1111 1111 0000 \ldots 0000}_2
+\end{align*}
+
+\paragraph{Decomposition:}
+\begin{itemize}
+    \item Sign bit: $s = 0$ (positive)
+    \item Exponent bits: $\texttt{111 1111 1111}_2 = 2047_{10}$ (all ones)
+    \item Mantissa bits: all zeros
+\end{itemize}
+
+\paragraph{Special case:}
+When $e = 2047$ (all exponent bits are 1) and $f = 0$, this represents \textbf{infinity}.
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Answer]
+\texttt{0x7ff0000000000000} = \textbf{$+\infty$} (positive infinity)
+\end{tcolorbox}
+
+\subsection*{Summary Table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Hexadecimal} & \textbf{Value} & \textbf{Type} \\
+\hline
+\texttt{0x3ff0000000000000} & $1.0$ & Normalized \\
+\texttt{0x0000000000000000} & $+0.0$ & Zero \\
+\texttt{0x8000000000000000} & $-0.0$ & Signed zero \\
+\texttt{0x0000000000000001} & $2^{-1074} \approx 4.94 \times 10^{-324}$ & Subnormal \\
+\texttt{0xc00a000000000000} & $-2.078125$ & Normalized \\
+\texttt{0x3ff6a09e667f3bcd} & $\sqrt{2} \approx 1.41421$ & Normalized \\
+\texttt{0x7ff0000000000000} & $+\infty$ & Infinity \\
+\hline
+\end{tabular}
+\caption{Decoded IEEE-754 double precision values}
+\end{table}
+
+\newpage
+
+\section{Problem 3: Decompose Double Precision by Iteration}
+
+\subsection*{Problem Statement}
+
+By successive iterations, propose a way to decompose a double precision number $x > 2^{-1021}$ into $E \in \mathbb{Z}$ and $m \in \mathbb{F}$, $1 \leq m < 2$ such that $x = 2^E \cdot m$.
+
+\subsection*{Solution}
+
+\subsubsection*{Understanding the Goal}
+
+We want to find the \textbf{normalized scientific notation} of a floating-point number:
+\begin{equation}
+x = 2^E \times m \quad \text{where } 1 \leq m < 2
+\end{equation}
+
+This decomposition is also known as finding the \textbf{exponent} and \textbf{mantissa} of the number.
+
+\subsubsection*{Algorithm Overview}
+
+The idea is to iteratively:
+\begin{enumerate}
+    \item Determine if $x$ is too large ($x \geq 2$) or too small ($x < 1$)
+    \item Scale $x$ by powers of 2 to bring it into the range $[1, 2)$
+    \item Track the exponent as we scale
+\end{enumerate}
+
+\subsubsection*{Method 1: Binary Search Approach}
+
+\paragraph{Initial bounds:}
+
+Since $x > 2^{-1021}$ is a normalized double precision number, we know:
+\begin{equation}
+2^{-1022} \leq x < 2^{1024}
+\end{equation}
+
+Thus: $-1022 \leq E \leq 1023$.
+
+\paragraph{Algorithm:}
+
+\begin{enumerate}
+    \item Initialize: $E = 0$, $m = x$
+    \item While $m \geq 2$:
+    \begin{itemize}
+        \item $m \gets m / 2$
+        \item $E \gets E + 1$
+    \end{itemize}
+    \item While $m < 1$:
+    \begin{itemize}
+        \item $m \gets m \times 2$
+        \item $E \gets E - 1$
+    \end{itemize}
+    \item Return $(E, m)$
+\end{enumerate}
+
+\paragraph{C Implementation:}
+
+\begin{lstlisting}
+void decompose_iterative_v1(double x, int *E, double *m) {
+    *E = 0;
+    *m = x;
+    
+    // Scale down if too large
+    while (*m >= 2.0) {
+        *m /= 2.0;
+        (*E)++;
+    }
+    
+    // Scale up if too small
+    while (*m < 1.0) {
+        *m *= 2.0;
+        (*E)--;
+    }
+}
+\end{lstlisting}
+
+\paragraph{Complexity:}
+
+In the worst case, we need $O(\log_2 |E|)$ iterations, which is at most about 10-11 iterations for double precision.
+
+\subsubsection*{Method 2: Optimized Binary Search}
+
+We can optimize by using larger jumps initially, then refining.
+
+\begin{lstlisting}
+void decompose_iterative_v2(double x, int *E, double *m) {
+    *E = 0;
+    *m = x;
+    
+    // Coarse adjustment by powers of 2^k
+    for (int k = 10; k >= 0; k--) {
+        int step = 1 << k;  // 2^k
+        double scale = 1.0;
+        
+        // Compute 2^step
+        for (int i = 0; i < step; i++) {
+            scale *= 2.0;
+        }
+        
+        // Scale down if possible
+        while (*m >= scale) {
+            *m /= scale;
+            *E += step;
+        }
+        
+        // Scale up if needed
+        while (*m < 1.0 && *m * scale < 2.0) {
+            *m *= scale;
+            *E -= step;
+        }
+    }
+    
+    // Final adjustment
+    while (*m >= 2.0) {
+        *m /= 2.0;
+        (*E)++;
+    }
+    
+    while (*m < 1.0) {
+        *m *= 2.0;
+        (*E)--;
+    }
+}
+\end{lstlisting}
+
+\subsubsection*{Method 3: Using frexp (Standard Library)}
+
+For reference, the C standard library provides \texttt{frexp} which does exactly this:
+
+\begin{lstlisting}
+#include <math.h>
+
+void decompose_using_frexp(double x, int *E, double *m) {
+    *m = frexp(x, E);
+    // Note: frexp returns m in [0.5, 1), so we adjust:
+    *m *= 2.0;
+    (*E)--;
+}
+\end{lstlisting}
+
+\subsubsection*{Verification Examples}
+
+\paragraph{Example 1: $x = 10.0$}
+\begin{align}
+10.0 &= 2^E \times m\\
+\text{Iterations:} \quad &10.0 \to 5.0 \to 2.5 \to 1.25\\
+E &= 3\\
+m &= 1.25\\
+\text{Check: } &2^3 \times 1.25 = 8 \times 1.25 = 10.0 \quad \checkmark
+\end{align}
+
+\paragraph{Example 2: $x = 0.125$}
+\begin{align}
+0.125 &= 2^E \times m\\
+\text{Iterations:} \quad &0.125 \to 0.25 \to 0.5 \to 1.0\\
+E &= -3\\
+m &= 1.0\\
+\text{Check: } &2^{-3} \times 1.0 = 0.125 \quad \checkmark
+\end{align}
+
+\paragraph{Example 3: $x = \sqrt{2} \approx 1.41421$}
+\begin{align}
+\sqrt{2} &\approx 1.41421\\
+\text{Already in range } [1, 2)\\
+E &= 0\\
+m &= 1.41421\\
+\text{Check: } &2^0 \times 1.41421 = 1.41421 \quad \checkmark
+\end{align}
+
+\subsubsection*{Complete Working Example}
+
+\begin{lstlisting}
+#include <stdio.h>
+
+void decompose_iterative(double x, int *E, double *m) {
+    *E = 0;
+    *m = x;
+    
+    // Scale down if too large
+    while (*m >= 2.0) {
+        *m /= 2.0;
+        (*E)++;
+    }
+    
+    // Scale up if too small
+    while (*m < 1.0) {
+        *m *= 2.0;
+        (*E)--;
+    }
+}
+
+int main() {
+    double test_values[] = {1.0, 10.0, 0.125, 3.14159, 1024.0};
+    int n = sizeof(test_values) / sizeof(test_values[0]);
+    
+    for (int i = 0; i < n; i++) {
+        int E;
+        double m;
+        decompose_iterative(test_values[i], &E, &m);
+        printf("x = %.6f = 2^%d * %.6f\n", test_values[i], E, m);
+        
+        // Verify
+        double reconstructed = m;
+        for (int j = 0; j < E; j++) reconstructed *= 2.0;
+        for (int j = 0; j > E; j--) reconstructed /= 2.0;
+        printf("  Verification: 2^%d * %.6f = %.6f\n\n", 
+               E, m, reconstructed);
+    }
+    
+    return 0;
+}
+\end{lstlisting}
+
+\subsubsection*{Output:}
+\begin{verbatim}
+x = 1.000000 = 2^0 * 1.000000
+  Verification: 2^0 * 1.000000 = 1.000000
+
+x = 10.000000 = 2^3 * 1.250000
+  Verification: 2^3 * 1.250000 = 10.000000
+
+x = 0.125000 = 2^-3 * 1.000000
+  Verification: 2^-3 * 1.000000 = 0.125000
+
+x = 3.141590 = 2^1 * 1.570795
+  Verification: 2^1 * 1.570795 = 3.141590
+
+x = 1024.000000 = 2^10 * 1.000000
+  Verification: 2^10 * 1.000000 = 1024.000000
+\end{verbatim}
+
+\begin{tcolorbox}[colback=green!5!white,colframe=green!75!black,title=Key Points]
+\begin{itemize}
+    \item The iterative approach repeatedly multiplies or divides by 2
+    \item Complexity is $O(\log |E|)$ which is typically 10-11 iterations max
+    \item Works for all normalized numbers ($x > 2^{-1021}$)
+    \item Division/multiplication by 2 is exact in floating-point (no rounding error)
+    \item Can be optimized using larger steps (binary search on exponent)
+\end{itemize}
+\end{tcolorbox}
+
+\subsection*{Why This Works}
+
+\begin{enumerate}
+    \item \textbf{Multiplication/division by 2 is exact}: In IEEE-754, multiplying or dividing by 2 only changes the exponent, not the mantissa. This is exact (no rounding error).
+    
+    \item \textbf{Convergence guarantee}: Each iteration either:
+    \begin{itemize}
+        \item Halves the number if $m \geq 2$, bringing it closer to $[1,2)$
+        \item Doubles the number if $m < 1$, bringing it closer to $[1,2)$
+    \end{itemize}
+    
+    \item \textbf{Termination}: Since exponents are bounded ($-1022 \leq E \leq 1023$), the algorithm terminates in finite time.
+\end{enumerate}
+
+\end{document}
