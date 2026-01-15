@@ -1,0 +1,563 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{property}[theorem]{Property}
+
+\title{Elementary Functions \& Stochastic Arithmetic:\\
+Lecture Summary and Connections to Exercises}
+\author{AFAE - Master 2 CCA\\
+Floating-point Arithmetic and Error Analysis}
+\date{Academic Year 2025/2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Lecture Overview: Elementary Functions}
+
+\subsection{Main Objectives}
+
+The lecture focuses on \textbf{how to compute elementary functions} (like $\exp$, $\sin$, $\log$, etc.) on computers using floating-point arithmetic. The key goals are:
+
+\begin{enumerate}
+    \item Understand why we need special algorithms (can't compute exactly)
+    \item Learn polynomial approximation techniques
+    \item Master argument reduction strategies
+    \item Achieve good performance (e.g., exp in ~40 cycles)
+    \item Understand correctly rounded functions
+    \item Explore automation of libm generation
+\end{enumerate}
+
+\subsection{Why This Matters}
+
+\begin{itemize}
+    \item Basic operations ($+, -, \times, /$) give exact results (rational numbers)
+    \item Elementary functions ($\exp, \sin, \log$) give \textbf{transcendental} results
+    \item Cannot be computed exactly $\Rightarrow$ need approximations
+    \item Used everywhere: bacteria growth, waves, finance, statistics
+\end{itemize}
+
+\section{Key Concepts and Theorems}
+
+\subsection{Floating-Point Representation}
+
+\begin{definition}[Floating-Point Number]
+A floating-point number in radix $\beta = 2$ with precision $k$ is represented as:
+\[
+x = \pm 2^E \cdot m
+\]
+where:
+\begin{itemize}
+    \item $E$ is the exponent (gives order of magnitude)
+    \item $m$ is the significand (gives the digits)
+    \item The set of such numbers is denoted $\mathbb{F}k$
+\end{itemize}
+\end{definition}
+
+\begin{property}[Precision of Standard Formats]
+\begin{align*}
+\text{binary32 (float):} \quad &-\log_{10}(2^{-24}) \approx 7.2 \text{ decimal digits}\\
+\text{binary64 (double):} \quad &-\log_{10}(2^{-53}) \approx 15.9 \text{ decimal digits}
+\end{align*}
+\end{property}
+
+\subsection{Polynomial Approximation}
+
+\subsubsection{Weierstrass Approximation Theorem}
+
+\begin{theorem}[Weierstrass]
+For any continuous function $f: [a,b] \to \mathbb{R}$ and any $\varepsilon > 0$, there exists a polynomial $p$ such that:
+\[
+\|f - p\|_{\infty} < \varepsilon
+\]
+\end{theorem}
+
+This is the fundamental reason we use polynomials!
+
+\subsubsection{Taylor Polynomials}
+
+\begin{theorem}[Taylor Expansion]
+For a function $f$ with $n+1$ continuous derivatives:
+\[
+f(x) = \sum_{i=0}^{n} \frac{f^{(i)}(x_0)}{i!} \cdot (x - x_0)^i + \frac{f^{(n+1)}(\xi)}{(n+1)!} \cdot (x - x_0)^{n+1}
+\]
+where $\xi \in [x_0, x]$ and the last term is the Lagrange remainder.
+\end{theorem}
+
+\textbf{Problem with Taylor:} Error blows up at boundaries of domain.
+
+\subsubsection{Interpolation Polynomials}
+
+\begin{theorem}[Interpolation Error]
+For a polynomial $p$ of degree $n$ interpolating $f$ at points $x_j$:
+\[
+f(x) = p(x) + \frac{1}{(n+1)!} f^{(n+1)}(\xi) \prod_{j=0}^{n}(x - x_j)
+\]
+\end{theorem}
+
+\textbf{Key Insight:} Choice of interpolation points $x_j$ affects error!
+
+\subsubsection{Chebyshev Points}
+
+\begin{definition}[Chebyshev Interpolation Points]
+On interval $[a, b]$, the Chebyshev points that minimize $\left\|\prod_{j=0}^{n}(x - x_j)\right\|_{\infty}$ are:
+\[
+x_j = a + \frac{b-a}{2} \cdot \left(\cos\left(\frac{2j-1}{2(n+1)}\pi\right) + 1\right)
+\]
+\end{definition}
+
+These cluster near the boundaries, giving better error distribution.
+
+\subsubsection{Remez Algorithm (Minimax Polynomial)}
+
+\begin{theorem}[Chebyshev-La Vallée-Poussin]
+A polynomial approximation $p$ is optimal (in the $\|\cdot\|_{\infty}$ norm) if and only if all extrema of the error $f(x) - p(x)$ have the same absolute value.
+\end{theorem}
+
+The \textbf{Remez algorithm} iteratively finds this optimal polynomial by:
+\begin{enumerate}
+    \item Interpolating $f(x) + (-1)^j \cdot \varepsilon$ at initial points
+    \item Exchanging points with locations of error extrema
+    \item Repeating until extrema are equioscillatory
+\end{enumerate}
+
+\subsection{Argument Reduction}
+
+\begin{definition}[Argument Reduction]
+Given $f: \mathbb{F} \to \mathbb{F}$, an argument reduction consists of:
+\begin{itemize}
+    \item A \textbf{reduction function} $r: \mathbb{F} \to \mathbb{F}^n$ (simple to compute)
+    \item A \textbf{reduced function} $g: \mathbb{F}^n \to \mathbb{F}^m$ (computed by polynomial/table)
+    \item A \textbf{reconstruction function} $c: \mathbb{F}^m \to \mathbb{F}$ (simple to compute)
+\end{itemize}
+such that $f(x) = c(g(r(x)))$ for all $x \in \mathbb{F}$.
+\end{definition}
+
+\subsubsection{Example: Exponential Without Table}
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Exponential Argument Reduction]
+\[
+e^x = 2^{\log_2(e) \cdot x} = 2^E \cdot 2^{\log_2(e) \cdot x - E} = 2^E \cdot e^{x - \frac{E}{\log_2(e)}} = 2^E \cdot e^r
+\]
+where:
+\begin{itemize}
+    \item $E = \lfloor \log_2(e) \cdot x \rceil$ (nearest integer)
+    \item $r = x - \frac{E}{\log_2(e)}$ (reduced argument)
+    \item $|r| \leq \frac{1}{2\log_2(e)} \approx 0.35$
+\end{itemize}
+\end{tcolorbox}
+
+\subsubsection{Example: Exponential With Table}
+
+\begin{tcolorbox}[colback=green!5!white,colframe=green!75!black,title=Table-Based Reduction]
+\[
+e^x = 2^E \cdot 2^{i \cdot 2^{-w}} \cdot e^r
+\]
+where:
+\begin{itemize}
+    \item $k = \lfloor \log_2(e) \cdot x \cdot 2^w \rceil$
+    \item $E = \lfloor k \cdot 2^{-w} \rfloor$ (integer part)
+    \item $i = k \cdot 2^{-w} - E$ (table index)
+    \item $r = x - \frac{k \cdot 2^{-w}}{\log_2(e)}$ (reduced argument)
+    \item $|r| \leq 2^{-w} \cdot \frac{1}{2\log_2(e)}$
+    \item $w$ = number of bits for table indexing
+\end{itemize}
+
+Read $2^i$ from precomputed table with $2^w$ entries.
+\end{tcolorbox}
+
+\subsection{Correctly Rounded Functions}
+
+\begin{definition}[Correct Rounding]
+Let $f: \mathbb{R}^n \to \mathbb{R}$ and $\circ_k: \mathbb{R} \to \mathbb{F}k$ be a rounding.
+A function $F: \mathbb{F}k^n \to \mathbb{F}k$ is a \textbf{correctly rounded} implementation of $f$ if:
+\[
+\forall x \in \mathbb{F}k^n, \quad F(x) = \circ_k(f(x))
+\]
+\end{definition}
+
+\textbf{The Table Maker's Dilemma:} We can only compute $\hat{y} = f(x) \cdot (1 + \varepsilon)$. How much precision $\varepsilon$ is needed for the worst case?
+
+\begin{lemma}[Worst Case for Exponential - Double Precision]
+For $f = \exp$ and rounding $\circ_{53}: \mathbb{R} \to \mathbb{F}53$ in double precision, let $D = \mathbb{F}53 \cap [-744.5, 709]$.
+
+Then for all $x \in D \setminus \{0\}$ and all $|\varepsilon| \leq 2^{-159}$:
+\[
+\circ_{53}(f(x) \cdot (1 + \varepsilon)) = \circ_{53}(f(x))
+\]
+\end{lemma}
+
+This means we need \textbf{159 bits of precision} for correct rounding of exp in double precision!
+
+\subsection{Performance Techniques}
+
+\subsubsection{Computing Nearest Integer Without Function Call}
+
+\begin{tcolorbox}[colback=yellow!10!white,colframe=orange!75!black,title=Magic Number Technique]
+To compute $\lfloor x \rceil$ (nearest integer) efficiently:
+
+\begin{verbatim}
+double shifter = 6755399441055744.0;  // 2^52 + 2^51
+double tmp = x + shifter;               // rounds to nearest
+double nearest = tmp - shifter;
+\end{verbatim}
+
+Works because for $x$ sufficiently small, $2^{52} + 2^{51} + x$ has $\text{ulp} = 1$.
+\end{tcolorbox}
+
+\subsubsection{Constructing $2^E$ Directly}
+
+\begin{tcolorbox}[colback=yellow!10!white,colframe=orange!75!black,title=Bit Manipulation]
+\begin{verbatim}
+int E;
+unsigned long long int tmp;
+double twoE;
+
+tmp = E + 1023;           // add double precision bias
+tmp <<= 52;               // shift to exponent position
+twoE = *((double *) &tmp);// interpret as double
+\end{verbatim}
+
+This directly constructs the floating-point representation!
+\end{tcolorbox}
+
+\section{Connection to Exercise 4: Stochastic Arithmetic}
+
+\subsection{The Link}
+
+The lecture on elementary functions and Exercise 4 are \textbf{closely related} through the theme of \textbf{numerical accuracy and error analysis}.
+
+\subsubsection{Shared Concepts}
+
+\begin{enumerate}
+    \item \textbf{Floating-Point Precision}
+    \begin{itemize}
+        \item Lecture: Uses binary32 (7.2 digits) and binary64 (15.9 digits) for function implementation
+        \item Exercise 4: Analyzes how cancellation affects these precisions differently
+    \end{itemize}
+    
+    \item \textbf{Error Accumulation}
+    \begin{itemize}
+        \item Lecture: Five sources of error in function evaluation:
+        \begin{enumerate}
+            \item Error in argument reduction
+            \item Error in table entries
+            \item Approximation error $\|p/f - 1\|_{\infty}$
+            \item Error in polynomial evaluation
+            \item Error in reconstruction
+        \end{enumerate}
+        \item Exercise 4: Catastrophic cancellation as a major source of error
+    \end{itemize}
+    
+    \item \textbf{Required Precision for Accuracy}
+    \begin{itemize}
+        \item Lecture: Need 159 bits for correctly rounded exp in double precision
+        \item Exercise 4: Need to understand how many bits are lost to cancellation
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Key Theorem Connecting Both}
+
+\begin{theorem}[Independence of Accuracy Loss - from Exercise 4]
+The \textbf{loss of accuracy} during a numerical computation is \textbf{independent} of the precision used for the floating-point representation.
+\end{theorem}
+
+\textbf{Application to Lecture Material:}
+
+When implementing elementary functions, if catastrophic cancellation occurs in:
+\begin{itemize}
+    \item The argument reduction step
+    \item The polynomial evaluation
+    \item The reconstruction
+\end{itemize}
+
+Then the number of digits lost will be the \textbf{same} whether we use binary32 or binary64!
+
+\subsection{Cancellation in Function Implementation}
+
+\subsubsection{Example from Exercise 4}
+
+In Gaussian elimination with $a = b+1$ and $c = b-1$:
+\[
+c - \frac{b^2}{a} = (b-1) - \frac{b^2}{b+1} = \frac{-1}{b+1}
+\]
+
+For $b = 303$:
+\[
+302 - 302.003289... = -0.003289...
+\]
+
+Digits lost: $\log_{10}(302/0.003289) \approx 5$ decimal digits
+
+\subsubsection{Similar Issue in Elementary Functions}
+
+In the argument reduction for $\exp(x)$:
+\[
+r = x - \frac{k \cdot 2^{-w}}{\log_2(e)}
+\]
+
+If $x \approx \frac{k \cdot 2^{-w}}{\log_2(e)}$, we get catastrophic cancellation!
+
+\textbf{This is why:}
+\begin{itemize}
+    \item The value $\frac{1}{\log_2(e)}$ must be stored with \textbf{very high precision}
+    \item The subtraction must be computed carefully
+    \item Multi-precision arithmetic may be needed (as mentioned in lecture)
+\end{itemize}
+
+\subsection{DSA/CADNA for Function Validation}
+
+\begin{tcolorbox}[colback=green!5!white,colframe=green!75!black,title=Application to libm Testing]
+\textbf{DSA (Discrete Stochastic Arithmetic)} from Exercise 4 could be used to:
+
+\begin{enumerate}
+    \item \textbf{Detect instabilities} in function implementations
+    \begin{itemize}
+        \item Run exp, sin, log with CADNA
+        \item Identify inputs where accuracy is lost
+        \item These are candidates for "hard to round" cases!
+    \end{itemize}
+    
+    \item \textbf{Validate polynomial approximations}
+    \begin{itemize}
+        \item Check if polynomial evaluation is stable
+        \item Detect when coefficients need more precision
+    \end{itemize}
+    
+    \item \textbf{Verify argument reduction}
+    \begin{itemize}
+        \item Check if reduced argument $r$ has enough accurate digits
+        \item Warning if cancellation occurs
+    \end{itemize}
+\end{enumerate}
+\end{tcolorbox}
+
+\subsection{The Toy Exponential from Lecture}
+
+From the lecture code (slide 17 \& 48):
+
+\begin{verbatim}
+// About 45 bits of accuracy
+double Exp(double x) {
+    // Argument reduction
+    z = x * TWO_4_RCP_LN_2;
+    // ... compute E, idx, r ...
+    r = x - t;  // <-- POTENTIAL CANCELLATION HERE!
+    
+    // Polynomial approximation
+    P = c0 + r*(c1 + r*(c2 + r*(c3 + r*(c4 + r*c5))));
+    
+    // Reconstruction
+    y = twoE.d * (tbl * P);
+    return y;
+}
+\end{verbatim}
+
+\textbf{Question from Exercise 4 perspective:} What happens if:
+\begin{itemize}
+    \item $x \approx t$ (near a table boundary)?
+    \item We only have 53 bits precision?
+    \item DSA might warn: "LOSS OF ACCURACY DUE TO CANCELLATION"!
+\end{itemize}
+
+\section{Key Formulas Summary}
+
+\subsection{Polynomial Approximation}
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Essential Formulas]
+\textbf{Taylor Polynomial:}
+\[
+p(x) = \sum_{i=0}^{n} \frac{f^{(i)}(x_0)}{i!} (x-x_0)^i
+\]
+
+\textbf{Chebyshev Points (on $[a,b]$):}
+\[
+x_j = a + \frac{b-a}{2} \left(\cos\left(\frac{2j-1}{2(n+1)}\pi\right) + 1\right)
+\]
+
+\textbf{Interpolation Error:}
+\[
+|f(x) - p(x)| \leq \frac{1}{(n+1)!} |f^{(n+1)}(\xi)| \prod_{j=0}^{n}|x - x_j|
+\]
+\end{tcolorbox}
+
+\subsection{Argument Reduction for Common Functions}
+
+\begin{tcolorbox}[colback=green!5!white,colframe=green!75!black,title=Standard Reductions]
+\textbf{Exponential:}
+\[
+e^x = 2^E \cdot 2^i \cdot e^r
+\]
+where $E$ is integer exponent, $i$ is table index, $|r|$ small.
+
+\textbf{Sine (periodicity):}
+\[
+\sin(x) = \sin(x - 2\pi k), \quad k = \left\lfloor \frac{x}{2\pi} \right\rceil
+\]
+
+\textbf{Logarithm:}
+\[
+\log(x) = \log(2^E \cdot m) = E \log(2) + \log(m)
+\]
+where $m \in [1, 2)$ is the significand.
+\end{tcolorbox}
+
+\subsection{Error Analysis (from Exercise 4)}
+
+\begin{tcolorbox}[colback=red!5!white,colframe=red!75!black,title=Cancellation Formula]
+\textbf{Digits Lost in Cancellation:}
+
+For $x \approx y$, computing $x - y$:
+\[
+\text{Digits lost} \approx \log_{10}\left(\frac{|x|}{|x-y|}\right)
+\]
+
+\textbf{This is INDEPENDENT of precision format!}
+
+\textbf{Remaining Precision:}
+\begin{align*}
+\text{binary32:} \quad &7.2 - \text{(digits lost)}\\
+\text{binary64:} \quad &15.9 - \text{(digits lost)}
+\end{align*}
+\end{tcolorbox}
+
+\subsection{DSA Accuracy Estimation}
+
+\begin{tcolorbox}[colback=purple!5!white,colframe=purple!75!black,title=CESTAC Method]
+\textbf{Number of Significant Digits:}
+\[
+C_R \approx \log_{10}\left(\frac{\sqrt{N}\,|\bar{R}|}{\sigma \tau_\beta}\right)
+\]
+where:
+\begin{itemize}
+    \item $\bar{R} = \frac{1}{N}\sum_{i=1}^N R_i$ (mean of $N$ samples with random rounding)
+    \item $\sigma^2 = \frac{1}{N-1}\sum_{i=1}^N (R_i - \bar{R})^2$ (variance)
+    \item $\tau_\beta$ = Student's t-distribution value
+    \item $N$ = number of samples (typically 3)
+\end{itemize}
+\end{tcolorbox}
+
+\section{Practical Implications}
+
+\subsection{For Function Implementation}
+
+\begin{enumerate}
+    \item \textbf{Choose reduction carefully} to avoid cancellation
+    \begin{itemize}
+        \item Store constants like $\frac{1}{\log_2(e)}$ with extra precision
+        \item Use compensated algorithms if needed
+    \end{itemize}
+    
+    \item \textbf{Use fpminimax} for polynomial coefficients
+    \begin{itemize}
+        \item Not just real coefficients
+        \item Need floating-point coefficients that preserve error bounds
+    \end{itemize}
+    
+    \item \textbf{Analyze all error sources}
+    \begin{itemize}
+        \item Approximation error (controllable via degree)
+        \item Rounding error (depends on precision)
+        \item Cancellation (can be catastrophic!)
+    \end{itemize}
+\end{enumerate}
+
+\subsection{For Numerical Analysis}
+
+\begin{enumerate}
+    \item \textbf{Don't trust all displayed digits}
+    \begin{itemize}
+        \item Classical FP shows 53 bits even if only 1 bit is reliable
+        \item DSA/CADNA shows only reliable digits
+    \end{itemize}
+    
+    \item \textbf{Higher precision helps but doesn't solve everything}
+    \begin{itemize}
+        \item binary64 vs binary32: more buffer, same loss
+        \item Algorithmic improvements > precision increases
+    \end{itemize}
+    
+    \item \textbf{Test systematically}
+    \begin{itemize}
+        \item Sampling isn't enough (worst cases are rare!)
+        \item Need formal proof or exhaustive testing
+        \item DSA can help identify problems
+    \end{itemize}
+\end{enumerate}
+
+\section{Conclusion: Unified View}
+
+\begin{tcolorbox}[colback=orange!10!white,colframe=orange!75!black,title=The Big Picture]
+\textbf{Elementary Functions} teaches us:
+\begin{itemize}
+    \item How to implement transcendental functions efficiently
+    \item Use polynomial approximation + argument reduction + tables
+    \item Achieve 40-cycle exp with 53-bit accuracy
+\end{itemize}
+
+\textbf{Stochastic Arithmetic (Exercise 4)} teaches us:
+\begin{itemize}
+    \item How to detect when accuracy is lost
+    \item Cancellation loses digits independent of precision
+    \item DSA reveals actual accuracy vs. displayed precision
+\end{itemize}
+
+\textbf{Together they show:}
+\begin{itemize}
+    \item Function implementation is an \textbf{error analysis problem}
+    \item Must carefully analyze all operations for stability
+    \item Tools like DSA/CADNA can validate implementations
+    \item Correctly rounded functions require understanding worst cases
+\end{itemize}
+\end{tcolorbox}
+
+\section{Further Study}
+
+\subsection{Recommended Reading}
+
+\begin{enumerate}
+    \item \textbf{Muller}, \textit{Elementary Functions, Algorithms and Implementation}, Birkhäuser, 2016
+    \begin{itemize}
+        \item Comprehensive reference for function implementation
+    \end{itemize}
+    
+    \item \textbf{Abramowitz and Stegun}, \textit{Handbook of Mathematical Functions}
+    \begin{itemize}
+        \item Source of remarkable identities for argument reduction
+    \end{itemize}
+    
+    \item \textbf{Tang}, ``Table-driven implementation of the exponential function'', TOMS 15(2), 1989
+    \begin{itemize}
+        \item Classic paper on efficient implementation
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Key Takeaways for Exams/Projects}
+
+\begin{enumerate}
+    \item Know the \textbf{Remez algorithm} and why it's optimal
+    \item Understand \textbf{argument reduction} examples (especially exp)
+    \item Remember \textbf{cancellation independence theorem}
+    \item Be able to compute \textbf{digits lost} in cancellation
+    \item Understand the \textbf{Table Maker's Dilemma}
+    \item Know how to use \textbf{bit manipulation} for performance
+    \item Understand \textbf{DSA/CADNA} for validation
+\end{enumerate}
+
+\end{document}
