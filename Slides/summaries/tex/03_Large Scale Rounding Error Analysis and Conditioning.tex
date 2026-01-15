@@ -1,0 +1,400 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\geometry{margin=1in}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+
+\title{Conditioning Theory, Backward Stability, and Error Analysis}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\noindent This document covers conditioning theory, backward stability, and the theoretical foundations of error analysis.
+
+\section{Types of Errors in Computation}
+
+\begin{enumerate}
+    \item \textbf{Measurement errors} -- in the initial data
+    \item \textbf{Modeling errors} -- approximating reality with mathematics
+    \item \textbf{Method errors} -- discretization, truncation in algorithms
+    \item \textbf{Rounding errors} -- finite precision arithmetic
+\end{enumerate}
+
+\noindent \textbf{Key principle}: Numerical algorithms should be designed with rounding errors in mind from the beginning, not as an afterthought.
+
+\section{Well-Posed vs Ill-Posed Problems}
+
+\begin{definition}[Well-Posed Problem]
+A problem $(P)$: find $x$ such that $F(x) = y$ for given $y$ is \textbf{well-posed} if:
+\begin{enumerate}
+    \item A solution $x = F^{-1}(y)$ exists
+    \item The solution is unique
+    \item The solution depends continuously on the data $y$ (equivalent to $F^{-1}$ being continuous)
+\end{enumerate}
+\end{definition}
+
+\noindent If any condition fails, the problem is \textbf{ill-posed} (e.g., solving $Ax = b$ with singular $A$).
+
+\section{Error Measurement}
+
+\subsection{For Scalars}
+
+Given an approximation $\hat{x}$ of a nonzero real number $x$:
+
+\begin{itemize}
+    \item \textbf{Absolute error}: $E_a(\hat{x}) = |x - \hat{x}| = |\Delta x|$
+    \item \textbf{Relative error}: $E_r(\hat{x}) = \frac{|x - \hat{x}|}{|x|} = \frac{|\Delta x|}{|x|}$
+\end{itemize}
+
+\subsection{For Vectors}
+
+Given $\hat{x} \in \mathbb{R}^n$ approximating $x \in \mathbb{R}^n$:
+
+\begin{itemize}
+    \item \textbf{Absolute error}: $E_a(\hat{x}) = |\Delta x|$
+    \item \textbf{Relative error} (two variants):
+    \begin{itemize}
+        \item \textbf{Normwise}: $|\Delta x|_g = \frac{|\Delta x|}{|x|}$
+        \item \textbf{Componentwise}: $|\Delta x|_c = \max_i \frac{|\Delta x_i|}{|x_i|}$ (when $x_i \neq 0$)
+    \end{itemize}
+\end{itemize}
+
+\section{Conditioning Theory}
+
+\subsection{General Condition Number}
+
+For a well-posed problem where $x = G(y)$ with $G = F^{-1}$:
+
+If there's an error $\Delta y$ in the data, the computed value is $\hat{x} = G(y + \Delta y)$.
+
+For sufficiently small $\Delta y$:
+\begin{equation}
+\hat{x} - x \approx G'(y) \cdot \Delta y
+\end{equation}
+
+This leads to the \textbf{relative error relationship}:
+\begin{equation}
+\frac{|\hat{x} - x|}{|x|} = K(G, y) \cdot \frac{|\Delta y|}{|y|} + O(|\Delta y|^2)
+\end{equation}
+
+where the \textbf{condition number} is:
+\begin{equation}
+K(G, y) = \left|\frac{yG'(y)}{G(y)}\right|
+\end{equation}
+
+\noindent \textbf{Interpretation}: The condition number measures how much relative errors in the input are amplified in the output.
+
+\subsection{Condition Number for Polynomial Evaluation}
+
+\subsubsection{Case 1: Perturbing the evaluation point $z$}
+
+For $p(z) = \sum_{i=0}^{n} a_i z^i$ with $z \neq 0$:
+\begin{equation}
+K(p, z) = \frac{|zp'(z)|}{|p(z)|}
+\end{equation}
+
+\noindent \textbf{Key observation}: The condition number approaches infinity as $z$ approaches a root of $p$. Thus, evaluating a polynomial near its roots is inherently ill-conditioned.
+
+\subsubsection{Case 2: Perturbing the coefficients}
+
+When coefficients $a = (a_0, \ldots, a_n)^T$ are perturbed by $\Delta a$ with:
+
+\begin{itemize}
+    \item Data norm: $|\Delta a|_D = \max_{i=0:n} |\Delta a_i|/|a_i|$ (relative componentwise)
+    \item Result norm: $|\Delta x|_R = |\Delta x|/|x|$ (relative absolute)
+\end{itemize}
+
+The \textbf{condition number} is:
+\begin{equation}
+K(p(z), a) = \frac{\sum_{i=0}^{n} |a_i z^i|}{|p(z)|} = \frac{\tilde{p}(|z|)}{|p(z)|}
+\end{equation}
+
+where $\tilde{p}(|z|) = \sum_{i=0}^{n} |a_i||z|^i$ is the polynomial with absolute value coefficients.
+
+\noindent \textbf{Important}: This condition number is also particularly large near roots of $p$.
+
+\subsection{Conditioning for Linear Systems}
+
+For the system $Ax = b$ where $A$ is nonsingular:
+
+If $x$ solves $Ax = b$ and $\hat{x} = x + \Delta x$ solves $Ax = b + \Delta b$:
+
+\begin{equation}
+A\Delta x = \Delta b \implies \Delta x = A^{-1}\Delta b
+\end{equation}
+
+This gives:
+\begin{equation}
+|\Delta x| \leq |A^{-1}||\Delta b|
+\end{equation}
+
+Since $|Ax| = |b| \geq \frac{|b|}{|A|}$, we have $|x| \geq \frac{|b|}{|A|}$
+
+Therefore:
+\begin{equation}
+\frac{|\Delta x|}{|x|} \leq |A||A^{-1}| \frac{|\Delta b|}{|b|}
+\end{equation}
+
+\subsection{Matrix Condition Number}
+
+The \textbf{condition number} of matrix $A$ is:
+\begin{equation}
+\kappa(A) = |A||A^{-1}|
+\end{equation}
+
+\subsubsection{Perturbations in $A$}
+
+If $x + \Delta x$ solves $(A + \Delta A)x = b$:
+\begin{equation}
+\frac{|\Delta x|}{|x|} \leq \kappa(A) \frac{|\Delta A|}{|A|}
+\end{equation}
+
+\subsubsection{Perturbations in both $A$ and $b$}
+
+If $x + \Delta x$ solves $(A + \Delta A)x = b + \Delta b$:
+\begin{equation}
+\frac{|\Delta x|}{|x|} \leq \frac{\kappa(A)}{1 - \kappa(A)\frac{|\Delta A|}{|A|}} \left(\frac{|\Delta A|}{|A|} + \frac{|\Delta b|}{|b|}\right)
+\end{equation}
+
+\subsection{Remarks on Condition Numbers}
+
+\begin{enumerate}
+    \item \textbf{Norm dependence}: The condition number depends on the choice of norm
+    \item \textbf{Distance to singularity}: Generally measures the inverse distance to singularity
+    \item \textbf{Problem property}: Depends only on the problem, not on the algorithm
+    \item \textbf{First-order analysis}: Only considers infinitesimal perturbations
+\end{enumerate}
+
+\section{Forward vs Backward Error Analysis}
+
+\subsection{Forward Error Analysis}
+
+\noindent \textbf{Approach}: Track the propagation of rounding errors through each operation in algorithm $\hat{G}$ applied to input $y$.
+
+\noindent \textbf{Result}: Provides an upper bound on the gap between exact solution $x$ and computed solution $\hat{x}$ (the forward error).
+
+\noindent \textbf{Answers}: ``To what accuracy is the problem solved?''
+
+\noindent \textbf{Disadvantage}: Tracking intermediate error propagation becomes complicated quickly and leads to expressions that are difficult to exploit.
+
+\subsection{Backward Error Analysis}
+
+\noindent \textbf{Approach}: A two-stage process:
+
+\noindent \textbf{Stage 1}: Identify the computed approximation $\hat{x}$ as the exact evaluation of $G$ at perturbed data $(y + \Delta y)$:
+\begin{equation}
+\hat{x} = G(y + \Delta y)
+\end{equation}
+
+The error $\Delta y$ is the \textbf{backward error}. This answers: ``Which problem was actually solved?''
+
+\noindent \textbf{Stage 2}: Since the backward error $\Delta y$ is estimated or bounded, analyze the effect using conditioning theory:
+\begin{equation}
+\text{forward error} \lesssim \text{condition number} \times \text{backward error}
+\end{equation}
+
+\noindent \textbf{Advantages}:
+
+\begin{itemize}
+    \item Cleaner analysis than forward error
+    \item Separates algorithm reliability (backward error) from problem difficulty (conditioning)
+    \item Provides natural definition of stability
+\end{itemize}
+
+\subsection{The Backward Error}
+
+The \textbf{backward error} associated with computed solution $\hat{x} = \hat{G}(y)$ is:
+\begin{equation}
+\eta(\hat{x}) = \min_{\Delta y \in D} \{|\Delta y|_D : \hat{x} = G(y + \Delta y)\}
+\end{equation}
+
+It measures the smallest perturbation to the data that makes $\hat{x}$ the exact solution.
+
+\subsection{Key Relationship}
+
+At first order:
+\begin{equation}
+\text{forward error} \lesssim \text{cond}(P, y) \times \eta(\hat{x})
+\end{equation}
+
+\section{Stability of Algorithms}
+
+\subsection{Definition: Backward Stability}
+
+An algorithm is \textbf{backward stable} for solving problem $(P)$ if the computed solution $\hat{x}$ has a small backward error $\eta(\hat{x})$.
+
+More specifically, an algorithm is backward stable in finite precision (with unit roundoff $u$) if:
+\begin{equation}
+\eta(\hat{x}) = O(u)
+\end{equation}
+
+\subsection{Interpretation}
+
+A backward-stable algorithm:
+
+\begin{itemize}
+    \item Computes the \textbf{exact solution} of a slightly perturbed problem
+    \item The perturbation is small enough that the perturbed and exact problems are indistinguishable at the working precision
+    \item Introduces no more error than is intrinsic to representing the data in finite precision
+    \item Makes optimal use of the available computer precision
+\end{itemize}
+
+\noindent \textbf{Important}: Backward stability does NOT guarantee that the solution is accurate---only that it's as accurate as the conditioning of the problem allows.
+
+\subsection{Accuracy of Backward-Stable Algorithms}
+
+For a backward-stable algorithm with backward error $\eta(\hat{x}) \approx u$:
+\begin{equation}
+|\Delta x| \lesssim K \cdot u
+\end{equation}
+
+where $K$ is the condition number.
+
+\noindent \textbf{Ill-conditioned problem}: A problem with relative accuracy $u$ is ill-conditioned if its condition number $K$ satisfies:
+\begin{equation}
+K \times u \geq 1
+\end{equation}
+
+In this case, even a backward-stable algorithm may produce results with large forward error.
+
+\section{Standard Model for Floating-Point Arithmetic}
+
+\subsection{Rounding Function}
+
+Let $\text{fl}: \mathbb{R} \to \mathbb{F}$ map real numbers to floating-point numbers.
+
+A \textbf{rounding} satisfies:
+
+\begin{enumerate}
+    \item $\text{fl}(x) = x$ for all $x \in \mathbb{F}$ (exactness)
+    \item $\text{fl}(x) \leq \text{fl}(y)$ for all $x \leq y$ (monotonicity)
+\end{enumerate}
+
+\noindent \textbf{Rounding modes}:
+
+\begin{itemize}
+    \item \textbf{Round to nearest}: $\text{fl}(x) = \arg\min_{y \in \mathbb{F}} |x - y|$
+    \item \textbf{Directed rounding}: toward $0$, $+\infty$, or $-\infty$
+\end{itemize}
+
+\subsection{Fundamental Theorem}
+
+\begin{theorem}
+For any $x \in \mathbb{R}$:
+\begin{equation}
+\text{fl}(x) = x(1 + \delta), \quad |\delta| \leq u
+\end{equation}
+
+where $u$ is the \textbf{unit roundoff}:
+
+\begin{itemize}
+    \item $u = \varepsilon/2$ for round-to-nearest
+    \item $u = \varepsilon$ for directed rounding
+\end{itemize}
+
+Here $\varepsilon = \beta^{1-p}$ is the machine epsilon ($p$ = precision, $\beta$ = base).
+\end{theorem}
+
+\subsection{Standard Model for Operations}
+
+For basic operations $\circ \in \{+, -, \times, /\}$:
+
+\noindent \textbf{Multiplicative form}:
+\begin{equation}
+\text{fl}(x \circ y) = (x \circ y)(1 + \delta), \quad |\delta| \leq u
+\end{equation}
+
+\noindent \textbf{Divisive form}:
+\begin{equation}
+\text{fl}(x \circ y) = \frac{x \circ y}{1 + \delta'}, \quad |\delta'| \leq u
+\end{equation}
+
+These are equivalent to first order since $(1 + \delta)^{-1} \approx 1 - \delta$ for small $\delta$.
+
+\subsection{Model With Underflow}
+
+To account for possible underflow (or overflow):
+\begin{equation}
+\text{fl}(x \circ y) = (x \circ y)(1 + \delta) + \eta
+\end{equation}
+
+where $|\delta| \leq u$, $|\eta| \leq \underline{u}$, and $\delta \cdot \eta = 0$.
+
+\begin{itemize}
+    \item If underflow occurs: $\delta = 0$, $\eta \neq 0$
+    \item Otherwise: $\eta = 0$, $\delta \neq 0$
+\end{itemize}
+
+\noindent \textbf{For IEEE 754 double precision (binary64) with round-to-nearest}:
+
+\begin{itemize}
+    \item $u = 2^{-53} \approx 1.11 \times 10^{-16}$
+    \item $\underline{u} = 2^{-1074} \approx 4.94 \times 10^{-324}$
+\end{itemize}
+
+\section{Summary of Key Concepts}
+
+\subsection{The Three Pillars of Error Analysis}
+
+\begin{enumerate}
+    \item \textbf{Condition Number}: Measures problem difficulty (sensitivity to input perturbations)
+    \item \textbf{Backward Error}: Measures algorithm reliability (equivalent input perturbation)
+    \item \textbf{Forward Error}: Measures solution accuracy (actual error in result)
+\end{enumerate}
+
+\subsection{The Fundamental Relationship}
+
+\begin{equation}
+\text{Forward Error} \lesssim \text{Condition Number} \times \text{Backward Error}
+\end{equation}
+
+This separates:
+
+\begin{itemize}
+    \item \textbf{What we can't control}: Condition number (inherent to the problem)
+    \item \textbf{What we can control}: Backward error (depends on algorithm design)
+\end{itemize}
+
+\subsection{Design Principles}
+
+\begin{enumerate}
+    \item \textbf{For well-conditioned problems} ($K \approx 1$): Most reasonable algorithms work well
+    \item \textbf{For ill-conditioned problems} ($K \gg 1$):
+    \begin{itemize}
+        \item Backward stability is essential
+        \item Even then, accuracy may be limited by $K \cdot u$
+        \item Reformulating the problem may help
+    \end{itemize}
+    \item \textbf{Ultimate goal}: Backward-stable algorithms that achieve $\eta(\hat{x}) = O(u)$
+\end{enumerate}
+
+\subsection{Practical Implications}
+
+\begin{itemize}
+    \item \textbf{Backward stability} is a gold standard for algorithm quality
+    \item A backward-stable algorithm is ``as good as it gets'' given the problem's conditioning
+    \item Poor accuracy with a backward-stable algorithm indicates an ill-conditioned problem, not a bad algorithm
+    \item Sometimes problem reformulation is necessary to avoid ill-conditioning
+\end{itemize}
+
+This framework provides a systematic way to:
+
+\begin{itemize}
+    \item Analyze numerical algorithms
+    \item Understand limitations of finite precision
+    \item Design robust numerical software
+    \item Diagnose sources of inaccuracy in computations
+\end{itemize}
+
+\end{document}

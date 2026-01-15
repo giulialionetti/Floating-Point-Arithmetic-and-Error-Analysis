@@ -1,0 +1,804 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\geometry{margin=2.5cm}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{AFAE - Sorbonne Université}
+\lhead{Tutorial 3: Error Analysis}
+\rfoot{Page \thepage}
+
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{notebox}[1][]{
+  colback=blue!5!white,
+  colframe=blue!75!black,
+  title=Note,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\newtcolorbox{warningbox}[1][]{
+  colback=red!5!white,
+  colframe=red!75!black,
+  title=Warning,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\newtcolorbox{successbox}[1][]{
+  colback=green!5!white,
+  colframe=green!75!black,
+  title=Success,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\newtcolorbox{examplebox}[1][]{
+  colback=purple!5!white,
+  colframe=purple!75!black,
+  title=Example,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\newtcolorbox{tipbox}[1][]{
+  colback=orange!5!white,
+  colframe=orange!75!black,
+  title=Tip,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10}
+}
+
+\DeclareMathOperator{\cond}{cond}
+\DeclareMathOperator{\dist}{dist}
+\DeclareMathOperator{\diag}{diag}
+
+\title{\textbf{Tutorial 3: Error Analysis and Conditioning}\\
+\large Floating-point arithmetic and error analysis (AFAE)}
+\author{Sorbonne Université}
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Exercise 1: Summation}
+
+\subsection{Question 1: Condition Number of Summation}
+
+\textbf{Goal}: Show that
+\begin{equation}
+\cond\left(\sum_{i=1}^{n} p_i\right) = \frac{\sum_{i=1}^{n} |p_i|}{|\sum_{i=1}^{n} p_i|}
+\end{equation}
+
+\textbf{Given Definition}:
+\begin{equation}
+\cond\left(\sum_{i=1}^{n} p_i\right) := \lim_{\varepsilon \to 0} \sup \left\{ \frac{|\sum_{i=1}^{n} \tilde{p}_i - \sum_{i=1}^{n} p_i|}{\varepsilon |\sum_{i=1}^{n} p_i|} : |\tilde{p}_i - p_i| \leq \varepsilon |p_i| \text{ for } i = 1, \ldots, n \right\}
+\end{equation}
+
+\textbf{Proof}:
+
+Let $S = \sum_{i=1}^{n} p_i$ and $\tilde{S} = \sum_{i=1}^{n} \tilde{p}_i$.
+
+The perturbation is:
+\begin{equation}
+\tilde{S} - S = \sum_{i=1}^{n} \tilde{p}_i - \sum_{i=1}^{n} p_i = \sum_{i=1}^{n} (\tilde{p}_i - p_i)
+\end{equation}
+
+Given the constraint $|\tilde{p}_i - p_i| \leq \varepsilon |p_i|$, we can write:
+\begin{equation}
+\tilde{p}_i - p_i = \delta_i |p_i|
+\end{equation}
+where $|\delta_i| \leq \varepsilon$.
+
+Therefore:
+\begin{equation}
+\tilde{S} - S = \sum_{i=1}^{n} \delta_i |p_i|
+\end{equation}
+
+Taking absolute values:
+\begin{equation}
+|\tilde{S} - S| = \left|\sum_{i=1}^{n} \delta_i |p_i|\right| \leq \sum_{i=1}^{n} |\delta_i| |p_i| \leq \varepsilon \sum_{i=1}^{n} |p_i|
+\end{equation}
+
+The supremum is achieved when all $\delta_i$ have the same sign as $|p_i|$:
+\begin{equation}
+\sup |\tilde{S} - S| = \varepsilon \sum_{i=1}^{n} |p_i|
+\end{equation}
+
+Dividing by $\varepsilon |S|$:
+\begin{equation}
+\cond(S) = \lim_{\varepsilon \to 0} \frac{\varepsilon \sum_{i=1}^{n} |p_i|}{\varepsilon |S|} = \frac{\sum_{i=1}^{n} |p_i|}{|\sum_{i=1}^{n} p_i|}
+\end{equation}
+
+\begin{equation}
+\boxed{\cond\left(\sum_{i=1}^{n} p_i\right) = \frac{\sum_{i=1}^{n} |p_i|}{|\sum_{i=1}^{n} p_i|}}
+\end{equation}
+
+\begin{notebox}[title=Interpretation]
+\begin{itemize}
+  \item If all $p_i$ have the same sign, then $\cond = 1$ (well-conditioned)
+  \item If there is massive cancellation, $|\sum p_i| \ll \sum |p_i|$, the condition number is large (ill-conditioned)
+\end{itemize}
+\end{notebox}
+
+\subsection{Question 2: Backward Stability of Recursive Summation}
+
+\textbf{Recursive Summation Algorithm}:
+
+\begin{lstlisting}
+s₁ = p₁
+s₂ = s₁ ⊕ p₂
+s₃ = s₂ ⊕ p₃
+...
+sₙ = sₙ₋₁ ⊕ pₙ
+\end{lstlisting}
+
+Where $\oplus$ denotes floating-point addition: $a \oplus b = (a + b)(1 + \delta)$ with $|\delta| \leq u$ (machine precision).
+
+\textbf{Backward Stability}: An algorithm is backward stable if the computed result $\tilde{f}(x)$ satisfies:
+\begin{equation}
+\tilde{f}(x) = f(\tilde{x})
+\end{equation}
+where $\tilde{x}$ is a slightly perturbed input: $|\tilde{x} - x| = O(u)|x|$.
+
+\textbf{Proof}:
+
+For the recursive summation:
+\begin{equation}
+\tilde{s}_k = ((\tilde{s}_{k-1} + p_k)(1 + \delta_k))
+\end{equation}
+
+Expanding recursively:
+\begin{equation}
+\tilde{s}_n = ((p_1(1+\delta_1) + p_2)(1+\delta_2) + p_3)(1+\delta_3) \cdots + p_n)(1+\delta_n)
+\end{equation}
+
+We can rewrite this as:
+\begin{equation}
+\tilde{s}_n = p_1 \prod_{j=1}^{n}(1+\delta_j) + p_2 \prod_{j=2}^{n}(1+\delta_j) + \cdots + p_n(1+\delta_n)
+\end{equation}
+
+Let $\theta_i = \prod_{j=i}^{n}(1+\delta_j) - 1$. Using the fact that $\prod(1+\delta_j) \approx 1 + \sum \delta_j$ for small $\delta_j$:
+
+\begin{equation}
+|\theta_i| \leq (n-i+1)u + O(u^2) \approx (n-i+1)u
+\end{equation}
+
+Therefore:
+\begin{equation}
+\tilde{s}_n = \sum_{i=1}^{n} p_i(1 + \theta_i) = \sum_{i=1}^{n} \tilde{p}_i
+\end{equation}
+
+where $\tilde{p}_i = p_i(1 + \theta_i)$ with $|\theta_i| \leq nu$.
+
+This shows that the computed sum is the exact sum of slightly perturbed values $\tilde{p}_i$.
+
+\begin{equation}
+\boxed{\text{Recursive summation is backward stable}}
+\end{equation}
+
+\begin{successbox}[title=Backward Stability]
+The computed result equals the exact sum of the inputs perturbed by at most $O(nu)$.
+\end{successbox}
+
+\subsection{Question 3: Relative Error Bound for Summation}
+
+Combining backward stability with conditioning:
+
+\textbf{Backward Stability} gives us:
+\begin{equation}
+\tilde{s}_n = \sum_{i=1}^{n} p_i(1 + \theta_i)
+\end{equation}
+with $|\theta_i| \leq nu$.
+
+\textbf{Forward Error}:
+\begin{equation}
+\left|\frac{\tilde{s}_n - s_n}{s_n}\right| = \left|\frac{\sum_{i=1}^{n} p_i \theta_i}{\sum_{i=1}^{n} p_i}\right|
+\end{equation}
+
+Using $|\theta_i| \leq nu$:
+\begin{equation}
+\left|\frac{\tilde{s}_n - s_n}{s_n}\right| \leq \frac{\sum_{i=1}^{n} |p_i| |\theta_i|}{|\sum_{i=1}^{n} p_i|} \leq nu \cdot \frac{\sum_{i=1}^{n} |p_i|}{|\sum_{i=1}^{n} p_i|}
+\end{equation}
+
+\begin{equation}
+\boxed{\left|\frac{\tilde{s}_n - s_n}{s_n}\right| \leq nu \cdot \cond\left(\sum_{i=1}^{n} p_i\right)}
+\end{equation}
+
+\textbf{Interpretation}:
+\begin{equation}
+\text{Relative Error} \leq \text{Machine Precision} \times \text{Number of Operations} \times \text{Condition Number}
+\end{equation}
+
+\subsection{Question 4: Dot Product Analysis}
+
+\textbf{Dot Product}: $d = \sum_{i=1}^{n} x_i y_i$
+
+\subsubsection{(a) Condition Number of Dot Product}
+
+Let $d = \sum_{i=1}^{n} x_i y_i$ with perturbations $\tilde{x}_i, \tilde{y}_i$.
+
+\begin{equation}
+\tilde{d} = \sum_{i=1}^{n} \tilde{x}_i \tilde{y}_i = \sum_{i=1}^{n} (x_i + \Delta x_i)(y_i + \Delta y_i)
+\end{equation}
+
+\begin{equation}
+= \sum_{i=1}^{n} (x_i y_i + x_i \Delta y_i + y_i \Delta x_i + \Delta x_i \Delta y_i)
+\end{equation}
+
+Neglecting second-order terms:
+\begin{equation}
+\tilde{d} - d \approx \sum_{i=1}^{n} (x_i \Delta y_i + y_i \Delta x_i)
+\end{equation}
+
+With $|\Delta x_i| \leq \varepsilon |x_i|$ and $|\Delta y_i| \leq \varepsilon |y_i|$:
+
+\begin{equation}
+|\tilde{d} - d| \leq \varepsilon \sum_{i=1}^{n} (|x_i| |y_i| + |y_i| |x_i|) = 2\varepsilon \sum_{i=1}^{n} |x_i y_i|
+\end{equation}
+
+Therefore:
+\begin{equation}
+\boxed{\cond(x \cdot y) = \frac{\sum_{i=1}^{n} |x_i y_i|}{|\sum_{i=1}^{n} x_i y_i|}}
+\end{equation}
+
+This has the same form as the summation condition number!
+
+\subsubsection{(b) Backward Stability of Dot Product}
+
+The dot product computation involves both multiplication and addition:
+
+\begin{lstlisting}
+t₁ = x₁ ⊗ y₁
+t₂ = t₁ ⊕ (x₂ ⊗ y₂)
+t₃ = t₂ ⊕ (x₃ ⊗ y₃)
+...
+\end{lstlisting}
+
+Each multiplication: $x_i \otimes y_i = x_i y_i (1 + \delta_i^{\text{mult}})$ with $|\delta_i^{\text{mult}}| \leq u$
+
+Each addition has error as before.
+
+Following similar analysis to summation:
+\begin{equation}
+\tilde{d} = \sum_{i=1}^{n} \tilde{x}_i \tilde{y}_i
+\end{equation}
+where $\tilde{x}_i \tilde{y}_i = x_i y_i (1 + \theta_i)$ with $|\theta_i| \leq 2nu$.
+
+\begin{equation}
+\boxed{\text{Dot product computation is backward stable}}
+\end{equation}
+
+\subsubsection{(c) Relative Error Bound}
+
+\begin{equation}
+\boxed{\left|\frac{\tilde{d} - d}{d}\right| \leq 2nu \cdot \cond(x \cdot y) = 2nu \cdot \frac{\sum_{i=1}^{n} |x_i y_i|}{|\sum_{i=1}^{n} x_i y_i|}}
+\end{equation}
+
+\begin{warningbox}[title=Orthogonal Vectors]
+When $x \perp y$ (nearly orthogonal), $\sum x_i y_i \approx 0$ while $\sum |x_i y_i|$ is not small. This makes the dot product ill-conditioned!
+\end{warningbox}
+
+\section{Exercise 2: Polynomial Evaluation}
+
+\subsection{Question 1: Condition Number Formula}
+
+For $p(x) = \sum_{i=0}^{n} a_i x^i$, the condition number of evaluating $p$ at $x$ is:
+
+\begin{equation}
+\boxed{\cond(p, x) = \frac{\sum_{i=0}^{n} |a_i| |x|^i}{|p(x)|} = \frac{\tilde{p}(|x|)}{|p(x)|}}
+\end{equation}
+
+where $\tilde{p}(x) = \sum_{i=0}^{n} |a_i| x^i$ is the polynomial with absolute value coefficients.
+
+\textbf{Derivation}:
+
+Consider perturbations $\tilde{a}_i = a_i(1 + \delta_i)$ with $|\delta_i| \leq \varepsilon$:
+
+\begin{equation}
+\tilde{p}(x) = \sum_{i=0}^{n} \tilde{a}_i x^i = \sum_{i=0}^{n} a_i(1 + \delta_i) x^i
+\end{equation}
+
+\begin{equation}
+\tilde{p}(x) - p(x) = \sum_{i=0}^{n} a_i \delta_i x^i
+\end{equation}
+
+\begin{equation}
+|\tilde{p}(x) - p(x)| \leq \varepsilon \sum_{i=0}^{n} |a_i| |x|^i
+\end{equation}
+
+\begin{equation}
+\cond(p, x) = \frac{\sum_{i=0}^{n} |a_i| |x|^i}{|p(x)|}
+\end{equation}
+
+\subsection{Question 2: Backward Stability of Horner Scheme}
+
+\textbf{Horner Scheme}:
+\begin{equation}
+p(x) = a_0 + x(a_1 + x(a_2 + \cdots + x(a_{n-1} + x \cdot a_n) \cdots))
+\end{equation}
+
+\textbf{Algorithm}:
+
+\begin{lstlisting}
+bₙ = aₙ
+bₙ₋₁ = aₙ₋₁ ⊕ (x ⊗ bₙ)
+bₙ₋₂ = aₙ₋₂ ⊕ (x ⊗ bₙ₋₁)
+...
+b₀ = a₀ ⊕ (x ⊗ b₁)
+\end{lstlisting}
+
+\textbf{Proof of Backward Stability}:
+
+At each step, we have:
+\begin{equation}
+\tilde{b}_i = (a_i + x \tilde{b}_{i+1}(1 + \delta_i^{\text{mult}}))(1 + \delta_i^{\text{add}})
+\end{equation}
+
+Working backwards from $\tilde{b}_n = a_n$:
+
+\begin{equation}
+\tilde{b}_{n-1} = (a_{n-1} + x a_n (1 + \delta_n^{\text{mult}}))(1 + \delta_{n-1}^{\text{add}})
+\end{equation}
+
+After complete expansion, we can show:
+\begin{equation}
+\tilde{b}_0 = \sum_{i=0}^{n} \tilde{a}_i x^i
+\end{equation}
+
+where $\tilde{a}_i = a_i(1 + \theta_i)$ with $|\theta_i| \leq 2nu$.
+
+This means the computed value is the exact evaluation of a slightly perturbed polynomial.
+
+\begin{equation}
+\boxed{\text{Horner scheme is backward stable}}
+\end{equation}
+
+\begin{successbox}[title=Efficiency]
+Horner scheme uses only $n$ multiplications and $n$ additions (optimal!)
+\end{successbox}
+
+\subsection{Question 3: Relative Error Bound}
+
+Combining backward stability with the condition number:
+
+\begin{equation}
+\boxed{\left|\frac{\tilde{p}(x) - p(x)}{p(x)}\right| \leq 2nu \cdot \cond(p, x) = 2nu \cdot \frac{\tilde{p}(|x|)}{|p(x)|}}
+\end{equation}
+
+\textbf{When is polynomial evaluation ill-conditioned?}
+
+\begin{itemize}
+  \item When $|p(x)| \ll \tilde{p}(|x|)$, i.e., when there is significant cancellation in the sum
+  \item Near roots of the polynomial: as $x \to \alpha$ where $p(\alpha) = 0$, we have $|p(x)| \to 0$
+\end{itemize}
+
+\subsection{Question 4: Distance to Nearest Root}
+
+\textbf{Given}: Distance $d(p, q) = \max_i \{ |a_i - b_i| / |a_i| \}$
+
+\textbf{To Show}:
+\begin{equation}
+\min \{ d(p, q) : q(z) = 0 \} = \frac{1}{\cond(p, z)}
+\end{equation}
+
+\textbf{Proof}:
+
+We want to find the smallest relative perturbation $d(p, q)$ such that $q(z) = 0$.
+
+Let $q(x) = \sum_{i=0}^{n} b_i x^i$ where $b_i = a_i(1 + \delta_i)$.
+
+For $q(z) = 0$:
+\begin{equation}
+\sum_{i=0}^{n} a_i(1 + \delta_i) z^i = 0
+\end{equation}
+\begin{equation}
+p(z) + \sum_{i=0}^{n} a_i \delta_i z^i = 0
+\end{equation}
+
+The minimum distance occurs when all $\delta_i$ are chosen to optimally cancel $p(z)$:
+\begin{equation}
+\sum_{i=0}^{n} a_i \delta_i z^i = -p(z)
+\end{equation}
+
+The minimum value of $\max_i |\delta_i|$ needed to achieve this is:
+\begin{equation}
+d_{\min} = \frac{|p(z)|}{\sum_{i=0}^{n} |a_i| |z|^i} = \frac{|p(z)|}{\tilde{p}(|z|)} = \frac{1}{\cond(p, z)}
+\end{equation}
+
+\begin{equation}
+\boxed{\min \{ d(p, q) : q(z) = 0 \} = \frac{1}{\cond(p, z)}}
+\end{equation}
+
+\textbf{Interpretation}:
+
+\begin{itemize}
+  \item If $\cond(p, z)$ is large (ill-conditioned), then a tiny perturbation in coefficients can create a root at $z$
+  \item This explains why roots of polynomials are sensitive to coefficient errors
+\end{itemize}
+
+\section{Exercise 3: Roots of Polynomials}
+
+\subsection{Question 1: Condition Number of a Simple Root}
+
+\textbf{Given}: $p(\alpha) = 0$ and $p'(\alpha) \neq 0$ (simple root)
+
+\textbf{Definition}:
+\begin{equation}
+K(p, \alpha) := \lim_{\varepsilon \to 0} \sup_{|\Delta a_i| \leq \varepsilon |a_i|} \left\{ \frac{|\Delta \alpha|}{\varepsilon |\alpha|} \right\}
+\end{equation}
+
+\textbf{To Show}:
+\begin{equation}
+K(p, \alpha) = \frac{\tilde{p}(|\alpha|)}{|\alpha| |p'(\alpha)|}
+\end{equation}
+
+\textbf{Proof}:
+
+Consider the perturbed polynomial:
+\begin{equation}
+\tilde{p}(x) = \sum_{i=0}^{n} (a_i + \Delta a_i) x^i
+\end{equation}
+
+Let $\tilde{\alpha} = \alpha + \Delta \alpha$ be the perturbed root: $\tilde{p}(\tilde{\alpha}) = 0$.
+
+Taylor expansion of $\tilde{p}$ around $\alpha$:
+\begin{equation}
+\tilde{p}(\tilde{\alpha}) = \tilde{p}(\alpha) + \tilde{p}'(\alpha) \Delta \alpha + O((\Delta \alpha)^2) = 0
+\end{equation}
+
+Since $\tilde{p}(\alpha) = p(\alpha) + \sum_{i=0}^{n} \Delta a_i \alpha^i = \sum_{i=0}^{n} \Delta a_i \alpha^i$ (as $p(\alpha) = 0$):
+
+\begin{equation}
+\sum_{i=0}^{n} \Delta a_i \alpha^i + p'(\alpha) \Delta \alpha + O(\varepsilon^2) = 0
+\end{equation}
+
+To first order:
+\begin{equation}
+\Delta \alpha \approx -\frac{\sum_{i=0}^{n} \Delta a_i \alpha^i}{p'(\alpha)}
+\end{equation}
+
+Taking absolute values:
+\begin{equation}
+|\Delta \alpha| \leq \frac{\sum_{i=0}^{n} |\Delta a_i| |\alpha|^i}{|p'(\alpha)|} \leq \frac{\varepsilon \sum_{i=0}^{n} |a_i| |\alpha|^i}{|p'(\alpha)|}
+\end{equation}
+
+Therefore:
+\begin{equation}
+\frac{|\Delta \alpha|}{\varepsilon |\alpha|} \leq \frac{\sum_{i=0}^{n} |a_i| |\alpha|^i}{|\alpha| |p'(\alpha)|} = \frac{\tilde{p}(|\alpha|)}{|\alpha| |p'(\alpha)|}
+\end{equation}
+
+\begin{equation}
+\boxed{K(p, \alpha) = \frac{\tilde{p}(|\alpha|)}{|\alpha| |p'(\alpha)|}}
+\end{equation}
+
+\subsection{Question 2: When is a Simple Root Ill-Conditioned?}
+
+A simple root $\alpha$ is \textbf{ill-conditioned} when $K(p, \alpha)$ is large.
+
+From the formula: $K(p, \alpha) = \frac{\tilde{p}(|\alpha|)}{|\alpha| |p'(\alpha)|}$
+
+\textbf{Ill-conditioning occurs when}:
+
+\begin{enumerate}
+  \item \textbf{Small derivative}: $|p'(\alpha)| \ll \tilde{p}(|\alpha|) / |\alpha|$
+  \begin{itemize}
+    \item This happens when the root is nearly a multiple root
+    \item The polynomial is nearly flat at the root
+    \item Example: $p(x) = (x - \alpha)^2 + \varepsilon$ has $p'(\alpha) = O(\sqrt{\varepsilon})$
+  \end{itemize}
+  
+  \item \textbf{Large $|\alpha|$} combined with small $|p'(\alpha)|$:
+  \begin{itemize}
+    \item High-degree polynomials evaluated at large $|\alpha|$
+    \item The numerator $\tilde{p}(|\alpha|) = \sum |a_i| |\alpha|^i$ grows rapidly with $|\alpha|$
+  \end{itemize}
+  
+  \item \textbf{Coefficient growth}:
+  \begin{itemize}
+    \item When $|a_i|$ are large, especially for high powers
+    \item Wilkinson's polynomial: $(x-1)(x-2)\cdots(x-20)$ has enormous coefficients
+  \end{itemize}
+\end{enumerate}
+
+\begin{examplebox}[title=Wilkinson's Polynomial]
+The polynomial $W(x) = \prod_{i=1}^{20} (x - i)$ is famously ill-conditioned. A tiny perturbation to one coefficient can move roots dramatically. This is because $|W'(i)|$ is small relative to the coefficient magnitudes.
+\end{examplebox}
+
+\textbf{Summary}: A root is ill-conditioned when:
+
+\begin{itemize}
+  \item \textbf{Near multiple root}: $p'(\alpha) \approx 0$
+  \item \textbf{Large root magnitude}: $|\alpha|$ is large relative to coefficient scale
+  \item \textbf{Coefficient imbalance}: Large variation in coefficient magnitudes
+\end{itemize}
+
+\begin{equation}
+\boxed{\text{Ill-conditioned when: } |p'(\alpha)| \ll \frac{\tilde{p}(|\alpha|)}{|\alpha|}}
+\end{equation}
+
+\section{Exercise 4: Conditioning of Matrix Inverse}
+
+\subsection{Question 1: Show that $\kappa(A) = |A| |A^{-1}|$}
+
+\textbf{Given Definition}:
+\begin{equation}
+\kappa(A) := \lim_{\varepsilon \to 0} \sup_{|\Delta A| \leq \varepsilon |A|} \left( \frac{|(A + \Delta A)^{-1} - A^{-1}|}{\varepsilon |A^{-1}|} \right)
+\end{equation}
+
+\textbf{Proof}:
+
+We need a perturbation formula for $(A + \Delta A)^{-1}$.
+
+\textbf{Lemma} (Matrix Inversion Perturbation Formula): If $|\Delta A| \cdot |A^{-1}| < 1$, then $A + \Delta A$ is invertible and:
+\begin{equation}
+(A + \Delta A)^{-1} = A^{-1} - A^{-1} \Delta A A^{-1} + A^{-1} \Delta A A^{-1} \Delta A A^{-1} - \cdots
+\end{equation}
+
+\textbf{Derivation}:
+\begin{equation}
+(A + \Delta A)^{-1} = (A(I + A^{-1}\Delta A))^{-1} = (I + A^{-1}\Delta A)^{-1} A^{-1}
+\end{equation}
+
+Using the Neumann series $(I + E)^{-1} = I - E + E^2 - E^3 + \cdots$ for $|E| < 1$:
+\begin{equation}
+(I + A^{-1}\Delta A)^{-1} = I - A^{-1}\Delta A + O(|\Delta A|^2)
+\end{equation}
+
+Therefore:
+\begin{equation}
+(A + \Delta A)^{-1} - A^{-1} = -A^{-1} \Delta A A^{-1} + O(|\Delta A|^2)
+\end{equation}
+
+Taking norms:
+\begin{equation}
+|(A + \Delta A)^{-1} - A^{-1}| = |A^{-1} \Delta A A^{-1}| + O(|\Delta A|^2)
+\end{equation}
+
+\begin{equation}
+\leq |A^{-1}| |\Delta A| |A^{-1}| + O(|\Delta A|^2)
+\end{equation}
+
+For the supremum over $|\Delta A| \leq \varepsilon |A|$, the worst case is when $\Delta A$ is aligned with the singular vectors to maximize the norm:
+
+\begin{equation}
+\sup_{|\Delta A| \leq \varepsilon |A|} |A^{-1} \Delta A A^{-1}| = \varepsilon |A| |A^{-1}|^2
+\end{equation}
+
+Therefore:
+\begin{equation}
+\kappa(A) = \lim_{\varepsilon \to 0} \frac{\varepsilon |A| |A^{-1}|^2 + O(\varepsilon^2)}{\varepsilon |A^{-1}|} = |A| |A^{-1}|
+\end{equation}
+
+\begin{equation}
+\boxed{\kappa(A) = |A| |A^{-1}|}
+\end{equation}
+
+\begin{notebox}[title=Standard Condition Number]
+This is the standard definition of the condition number of a matrix!
+
+\begin{itemize}
+  \item $\kappa(A) \geq 1$ (equality when $A$ is orthogonal/unitary)
+  \item Large $\kappa(A)$ means $A$ is close to singular
+  \item $\kappa(A) = \infty$ when $A$ is singular
+\end{itemize}
+\end{notebox}
+
+\subsection{Question 2: Distance to Singularity}
+
+\textbf{Distance to Singularity}:
+\begin{equation}
+\dist(A) := \min \left\{ \frac{|\Delta A|}{|A|} : A + \Delta A \text{ is singular} \right\}
+\end{equation}
+
+\textbf{To Show}: $\dist(A) = \kappa(A)^{-1}$
+
+\textbf{Proof}:
+
+$A + \Delta A$ is singular if and only if there exists a unit vector $v$ ($|v| = 1$) such that:
+\begin{equation}
+(A + \Delta A)v = 0
+\end{equation}
+\begin{equation}
+Av = -\Delta A v
+\end{equation}
+
+Taking norms:
+\begin{equation}
+|Av| = |\Delta A v| \leq |\Delta A| |v| = |\Delta A|
+\end{equation}
+
+Since $|v| = 1$:
+\begin{equation}
+|Av| \leq |\Delta A|
+\end{equation}
+
+The minimum $|\Delta A|$ occurs when we choose $v$ to minimize $|Av|$:
+\begin{equation}
+\min_{|v|=1} |Av| = \sigma_{\min}(A) = \frac{1}{|A^{-1}|}
+\end{equation}
+
+where $\sigma_{\min}(A)$ is the smallest singular value of $A$.
+
+Therefore:
+\begin{equation}
+\min |\Delta A| = \sigma_{\min}(A) = \frac{1}{|A^{-1}|}
+\end{equation}
+
+And:
+\begin{equation}
+\dist(A) = \frac{\sigma_{\min}(A)}{|A|} = \frac{1}{|A| |A^{-1}|} = \frac{1}{\kappa(A)}
+\end{equation}
+
+\begin{equation}
+\boxed{\dist(A) = \kappa(A)^{-1}}
+\end{equation}
+
+\textbf{Interpretation}:
+
+\begin{itemize}
+  \item If $\kappa(A)$ is large, $A$ is close to a singular matrix
+  \item A relative perturbation of size $1/\kappa(A)$ can make $A$ singular
+  \item Well-conditioned matrices ($\kappa(A) \approx 1$) are far from singular
+\end{itemize}
+
+\subsection{Question 3: Express $\kappa(A)$ in Terms of Singular Values}
+
+\textbf{Singular Value Decomposition (SVD)}:
+\begin{equation}
+A = U \Sigma V^T
+\end{equation}
+
+where:
+\begin{itemize}
+  \item $U, V$ are orthogonal matrices
+  \item $\Sigma = \diag(\sigma_1, \sigma_2, \ldots, \sigma_n)$ with $\sigma_1 \geq \sigma_2 \geq \cdots \geq \sigma_n \geq 0$
+\end{itemize}
+
+\textbf{Properties}:
+
+\begin{itemize}
+  \item $|A|_2 = \sigma_1 = \sigma_{\max}(A)$ (largest singular value)
+  \item $|A^{-1}|_2 = 1/\sigma_n = 1/\sigma_{\min}(A)$ (reciprocal of smallest singular value)
+\end{itemize}
+
+\textbf{Therefore}:
+\begin{equation}
+\kappa(A) = |A|_2 |A^{-1}|_2 = \sigma_{\max}(A) \cdot \frac{1}{\sigma_{\min}(A)}
+\end{equation}
+
+\begin{equation}
+\boxed{\kappa(A) = \frac{\sigma_{\max}(A)}{\sigma_{\min}(A)} = \frac{\sigma_1}{\sigma_n}}
+\end{equation}
+
+\textbf{Special Cases}:
+
+\begin{enumerate}
+  \item \textbf{Orthogonal/Unitary matrices}: $\sigma_1 = \sigma_n = 1$
+  \begin{equation}
+  \kappa(Q) = 1 \quad \text{(perfectly conditioned)}
+  \end{equation}
+  
+  \item \textbf{Diagonal matrices}: $\Sigma = \diag(d_1, \ldots, d_n)$
+  \begin{equation}
+  \kappa(\Sigma) = \frac{\max_i |d_i|}{\min_i |d_i|}
+  \end{equation}
+  
+  \item \textbf{Near-singular matrices}: $\sigma_n \approx 0$
+  \begin{equation}
+  \kappa(A) \to \infty \quad \text{(ill-conditioned)}
+  \end{equation}
+\end{enumerate}
+
+\begin{tipbox}[title=Practical Interpretation]
+The condition number is the ratio of the largest to smallest ``stretching factors'' of the matrix.
+
+\begin{itemize}
+  \item $\kappa(A)$ measures how much the matrix amplifies relative errors
+  \item In floating-point arithmetic with precision $u$, expect errors of order $\kappa(A) \cdot u$
+\end{itemize}
+\end{tipbox}
+
+\section{Summary}
+
+\subsection{Key Concepts}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{3.5cm}p{5cm}p{5cm}}
+\toprule
+\textbf{Concept} & \textbf{Formula} & \textbf{Meaning} \\
+\midrule
+Condition Number & $\cond(f, x) = \frac{\|f'(x)\| \|x\|}{\|f(x)\|}$ & Amplification of relative errors \\
+\midrule
+Backward Stability & $\tilde{f}(x) = f(\tilde{x})$ where $\tilde{x} \approx x$ & Computed result = exact result of perturbed input \\
+\midrule
+Forward Error Bound & $\frac{\|\tilde{y} - y\|}{\|y\|} \leq \text{accuracy} \times \cond$ & Relative error bounded by algorithm accuracy $\times$ conditioning \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Condition Numbers Derived}
+
+\begin{enumerate}
+  \item \textbf{Summation}:
+  \begin{equation}
+  \cond\left(\sum p_i\right) = \frac{\sum |p_i|}{|\sum p_i|}
+  \end{equation}
+  
+  \item \textbf{Dot Product}:
+  \begin{equation}
+  \cond(x \cdot y) = \frac{\sum |x_i y_i|}{|\sum x_i y_i|}
+  \end{equation}
+  
+  \item \textbf{Polynomial Evaluation}:
+  \begin{equation}
+  \cond(p, x) = \frac{\tilde{p}(|x|)}{|p(x)|}
+  \end{equation}
+  
+  \item \textbf{Polynomial Root}:
+  \begin{equation}
+  K(p, \alpha) = \frac{\tilde{p}(|\alpha|)}{|\alpha| |p'(\alpha)|}
+  \end{equation}
+  
+  \item \textbf{Matrix Inverse}:
+  \begin{equation}
+  \kappa(A) = |A| |A^{-1}| = \frac{\sigma_{\max}}{\sigma_{\min}}
+  \end{equation}
+\end{enumerate}
+
+\subsection{Backward Stable Algorithms}
+
+\begin{itemize}
+  \item \checkmark Recursive summation: $O(nu)$ error
+  \item \checkmark Dot product: $O(nu)$ error
+  \item \checkmark Horner scheme: $O(nu)$ error per evaluation
+\end{itemize}
+
+\subsection{When Problems Are Ill-Conditioned}
+
+\begin{itemize}
+  \item \textbf{Summation}: Massive cancellation ($\sum p_i \approx 0$ but $\sum |p_i|$ large)
+  \item \textbf{Dot Product}: Nearly orthogonal vectors
+  \item \textbf{Polynomial Evaluation}: Near roots or significant cancellation
+  \item \textbf{Polynomial Roots}: Nearly multiple roots ($p'(\alpha) \approx 0$)
+  \item \textbf{Matrix Inverse}: Nearly singular ($\sigma_{\min} \approx 0$)
+\end{itemize}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+\noindent\textit{Tutorial solved with Claude by Giulia Lionetti - Sorbonne Université}
+
+\end{document}

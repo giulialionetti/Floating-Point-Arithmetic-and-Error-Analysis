@@ -1,0 +1,533 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\geometry{margin=2.5cm}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{AFAE - Sorbonne Université}
+\lhead{Compensated Algorithms}
+\rfoot{Page \thepage}
+
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{notebox}[1][]{
+  colback=blue!5!white,
+  colframe=blue!75!black,
+  title=Note,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\newtcolorbox{warningbox}[1][]{
+  colback=red!5!white,
+  colframe=red!75!black,
+  title=Warning,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\newtcolorbox{successbox}[1][]{
+  colback=green!5!white,
+  colframe=green!75!black,
+  title=Key Result,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\newtcolorbox{examplebox}[1][]{
+  colback=purple!5!white,
+  colframe=purple!75!black,
+  title=Example,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\newtcolorbox{performancebox}[1][]{
+  colback=orange!5!white,
+  colframe=orange!75!black,
+  title=Performance,
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10},
+  mathescape=true
+}
+
+\DeclareMathOperator{\cond}{cond}
+\DeclareMathOperator{\fl}{fl}
+\DeclareMathOperator{\FMA}{FMA}
+
+\title{\textbf{Compensated Algorithms and \\Error-Free Transformations}\\
+\large Floating-point arithmetic and error analysis (AFAE)}
+\author{Sorbonne Université}
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction to Backward Error Analysis}
+
+The fundamental approach to understanding numerical errors uses \textbf{backward error analysis}:
+
+\begin{itemize}
+  \item \textbf{Forward error}: Measures the difference between computed result and exact result
+  \item \textbf{Backward error}: Identifies the computed result as the exact solution to a perturbed problem
+  \item \textbf{Condition number}: Measures sensitivity of the solution to perturbations in the data
+\end{itemize}
+
+The key relationship is:
+\begin{equation}
+\text{forward error} \lesssim \text{condition number} \times \text{backward error}
+\end{equation}
+
+When the backward error is approximately $u$ (machine precision), the algorithm is called \textbf{backward stable}.
+
+\subsection{Standard Model of Floating-Point Arithmetic}
+
+For basic operations, we have:
+\begin{equation}
+a \circ b = \fl(a \circ b) = (a \circ b)(1 + \delta)
+\end{equation}
+where $|\delta| \leq u$ and $u = 2^{-p}$ is the unit roundoff.
+
+\section{Fundamental Theorems and Results}
+
+\subsection{Lemma 1: Error Accumulation}
+
+\begin{tcolorbox}[colback=blue!10!white,colframe=blue!75!black,title=Lemma 1 (Error Accumulation)]
+If $|\delta_i| \leq u$ for $i = 1:n$ and $nu < 1$, then:
+\begin{equation}
+\prod_{i=1}^{n} (1+\delta_i)^{\rho_i} = 1 + \delta_n
+\end{equation}
+where $|\delta_n| \leq \gamma_n = \frac{nu}{1-nu}$.
+\end{tcolorbox}
+
+This lemma is fundamental for analyzing error accumulation in sequences of floating-point operations.
+
+\subsection{Convergence of Newton's Method}
+
+Under appropriate assumptions about the derivative accuracy and assuming $u \cdot \cond_{\text{root}}(p,x) \leq 1/8$, Newton's method converges until reaching the accuracy limit determined by the condition number and the quality of function/derivative evaluation.
+
+\section{Practical Considerations}
+
+\subsection{When to Use Compensated Algorithms}
+
+Compensated algorithms are beneficial when:
+
+\begin{itemize}
+  \item The condition number of the problem is large (near $1/u$ or larger)
+  \item High accuracy is required without switching to higher precision
+  \item Performance is acceptable (typically 2--4$\times$ slower than standard algorithms)
+\end{itemize}
+
+\subsection{Computational Costs}
+
+Summary of operation counts:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Algorithm} & \textbf{Cost (flops)} \\
+\midrule
+TwoSum & 6 \\
+FastTwoSum & 3 \\
+TwoProduct (without FMA) & 17 \\
+TwoProduct (with FMA) & 2 \\
+CompSum (for $n$ terms) & $\approx 13n$ \\
+CompHorner (degree $n$) & $\approx 13n$ \\
+\bottomrule
+\end{tabular}
+\caption{Operation counts for compensated algorithms}
+\end{table}
+
+\begin{successbox}
+The compensated algorithms achieve accuracy improvements of roughly $1/u$ (going from $\gamma_n$ to $u + \gamma_n^2$) while only requiring 3--4 times more operations than standard algorithms, making them much more efficient than switching to double-double or quad precision arithmetic.
+\end{successbox}
+
+\section{Error-Free Transformations (EFT)}
+
+EFTs are fundamental building blocks that allow us to compute the exact rounding error from floating-point operations.
+
+\subsection{TwoSum Algorithm}
+
+Computes $x + y = s + e$ where both $s$ and $e$ are floating-point numbers:
+
+\begin{algorithm}[H]
+\caption{TwoSum}
+\begin{algorithmic}[1]
+\Function{TwoSum}{$a, b$}
+    \State $x \gets a \oplus b$
+    \State $z \gets x \ominus a$
+    \State $y \gets (a \ominus (x \ominus z)) \oplus (b \ominus z)$
+    \State \Return $[x, y]$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Properties}:
+\begin{itemize}
+  \item $a + b = x + y$ exactly
+  \item $|y| \leq u|x|$ and $|y| \leq u|a + b|$
+  \item Cost: 6 floating-point operations
+\end{itemize}
+
+\subsection{FastTwoSum Algorithm}
+
+When $|a| \geq |b|$, only 3 operations are needed.
+
+\begin{algorithm}[H]
+\caption{FastTwoSum}
+\begin{algorithmic}[1]
+\State $s \gets \fl(a + b)$
+\State $z \gets \fl(s - a)$
+\State $t \gets \fl(b - z)$
+\State \Return $[s, t]$
+\end{algorithmic}
+\end{algorithm}
+
+With round-to-nearest: $s + t = a + b$ exactly, where $t$ captures the rounding error.
+
+\subsubsection{FastTwoSum with Directed Rounding}
+
+\begin{warningbox}[title=Directed Rounding Issues]
+FastTwoSum requires \textbf{round-to-nearest} mode. The algorithm fails with directed rounding modes.
+\end{warningbox}
+
+\begin{examplebox}[title=Counterexample with Rounding toward $+\infty$]
+\textbf{Values}:
+\begin{itemize}
+  \item $a = 1$
+  \item $b = 2^{-53}$
+  \item Check: $|a| \geq |b|$ \checkmark
+\end{itemize}
+
+\textbf{Step 1}: $s \leftarrow \fl_{\uparrow}(1 + 2^{-53})$
+\begin{itemize}
+  \item Exact value: $1 + 2^{-53}$ (not representable)
+  \item Rounded up to: $s = 1 + 2^{-52}$ (next representable number)
+\end{itemize}
+
+\textbf{Step 2}: $z \leftarrow \fl_{\uparrow}(s - a) = \fl_{\uparrow}(2^{-52}) = 2^{-52}$
+
+\textbf{Step 3}: $t \leftarrow \fl_{\uparrow}(b - z) = \fl_{\uparrow}(2^{-53} - 2^{-52}) = -2^{-53}$
+
+\textbf{Verification}: 
+\begin{equation}
+s + t = (1 + 2^{-52}) + (-2^{-53}) = 1 + 2^{-53} = a + b \quad \checkmark
+\end{equation}
+
+The \textbf{true rounding error} from step 1 should be:
+\begin{equation}
+\text{error}_{\text{true}} = s - (a + b) = (1 + 2^{-52}) - (1 + 2^{-53}) = 2^{-53}
+\end{equation}
+
+But FastTwoSum computes $t = -2^{-53}$, which has the \textbf{wrong sign}.
+
+While $s + t = a + b$ still holds, $t$ does \textbf{not} represent the actual rounding error of the addition. The algorithm captures the difference needed to reconstruct $a + b$, but not the rounding error itself.
+\end{examplebox}
+
+\textbf{Analysis}:
+
+\begin{itemize}
+  \item \textbf{With round-to-nearest}:
+  \begin{itemize}
+    \item Rounding errors are symmetric ($\pm u/2$)
+    \item Error cancellations work correctly
+    \item $t$ represents the true rounding error
+  \end{itemize}
+  
+  \item \textbf{With rounding toward $+\infty$}:
+  \begin{itemize}
+    \item All operations systematically round upward
+    \item Creates directional bias that compounds across operations
+    \item The subtraction steps (2--3) cannot correctly recover the rounding error
+    \item $t$ becomes a correction term but not the actual error
+  \end{itemize}
+\end{itemize}
+
+\begin{notebox}
+FastTwoSum requires \textbf{round-to-nearest} mode. Directed rounding breaks the error-free transformation property because systematic rounding bias prevents exact error recovery. Different algorithms are needed for directed rounding modes.
+\end{notebox}
+
+\subsection{TwoProduct Algorithm}
+
+Computes $a \times b = x + y$ exactly.
+
+\subsubsection{Without FMA (17 operations)}
+
+\begin{algorithm}[H]
+\caption{TwoProduct (without FMA)}
+\begin{algorithmic}[1]
+\Function{TwoProduct}{$a, b$}
+    \State $x \gets a \otimes b$
+    \State $[a_1, a_2] \gets \Call{Split}{a}$
+    \State $[b_1, b_2] \gets \Call{Split}{b}$
+    \State $y \gets a_2 \otimes b_2 \ominus (((x \ominus a_1 \otimes b_1) \ominus a_2 \otimes b_1) \ominus a_1 \otimes b_2)$
+    \State \Return $[x, y]$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{With FMA (2 operations)}
+
+\begin{algorithm}[H]
+\caption{TwoProduct (with FMA)}
+\begin{algorithmic}[1]
+\Function{TwoProduct}{$a, b$}
+    \State $x \gets a \otimes b$
+    \State $y \gets \FMA(a, b, -x)$
+    \State \Return $[x, y]$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{performancebox}
+With FMA (Fused Multiply-Add), TwoProduct requires only 2 operations instead of 17, making compensated algorithms dramatically more efficient on modern processors.
+\end{performancebox}
+
+\section{Summation Algorithms}
+
+\subsection{Classic Recursive Sum}
+
+The standard algorithm has error bound:
+\begin{equation}
+|\text{res} - s| \leq \gamma_{n-1} \sum_{i=1}^{n} |p_i|
+\end{equation}
+
+where $\gamma_n = \frac{nu}{1-nu}$.
+
+\subsection{Kahan's Compensated Summation}
+
+Improves accuracy significantly with error bound:
+\begin{equation}
+|\text{res} - s| \leq (2u + O(nu^2)) \sum_{i=1}^{n} |p_i|
+\end{equation}
+
+The algorithm maintains a running compensation term that captures lost precision.
+
+\subsection{Compensated Summation (Ogita-Rump-Oishi)}
+
+Achieves near-optimal accuracy with error bound:
+\begin{equation}
+|\text{res} - s| \leq u|s| + \gamma_{n-1}^2 S
+\end{equation}
+
+where $S = \sum |p_i|$.
+
+\begin{algorithm}[H]
+\caption{CompSum (Compensated Summation)}
+\begin{algorithmic}[1]
+\Function{CompSum}{$p$}
+    \State $\pi_1 \gets p_1$; $\sigma_1 \gets 0$
+    \For{$i = 2$ to $n$}
+        \State $[\pi_i, q_i] \gets \Call{TwoSum}{\pi_{i-1}, p_i}$
+        \State $\sigma_i \gets \sigma_{i-1} \oplus q_i$
+    \EndFor
+    \State $\text{res} \gets \pi_n \oplus \sigma_n$
+    \State \Return res
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+The algorithm uses EFT to capture all rounding errors, then sums them separately.
+
+\begin{successbox}[title=Accuracy Improvement]
+CompSum reduces the error from $O(nu)$ to $O(u + n^2u^2)$, achieving near-optimal accuracy. For typical values with $n \approx 10^6$ and $u \approx 10^{-16}$:
+\begin{itemize}
+  \item Classic sum: error $\approx 10^{-10}$
+  \item CompSum: error $\approx 10^{-16}$
+\end{itemize}
+\end{successbox}
+
+\section{Polynomial Evaluation}
+
+\subsection{Horner's Scheme}
+
+The classic method with error bound:
+\begin{equation}
+\frac{|p(x) - \text{Horner}(p,x)|}{|p(x)|} \leq \gamma_{2n} \cdot \cond(p,x)
+\end{equation}
+
+where the condition number is:
+\begin{equation}
+\cond(p,x) = \frac{\sum_{i=0}^{n} |a_i||x|^i}{|\sum_{i=0}^{n} a_ix^i|} = \frac{\tilde{p}(|x|)}{|p(x)|}
+\end{equation}
+
+\subsection{Compensated Horner Scheme (CompHorner)}
+
+Achieves much better accuracy with error bound:
+\begin{equation}
+\frac{|\text{CompHorner}(p,x) - p(x)|}{|p(x)|} \leq u + \gamma_{2n}^2 \cdot \cond(p,x)
+\end{equation}
+
+\begin{algorithm}[H]
+\caption{CompHorner (Compensated Horner)}
+\begin{algorithmic}[1]
+\Function{CompHorner}{$p, x$}
+    \State $[h, p_\pi, p_\sigma] \gets \Call{EFTHorner}{p, x}$
+    \State $c \gets \Call{Horner}{p_\pi \oplus p_\sigma, x}$
+    \State $\text{res} \gets h \oplus c$
+    \State \Return res
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+The algorithm uses TwoProduct and TwoSum to capture rounding errors during Horner evaluation, then evaluates the error polynomial.
+
+\begin{performancebox}[title=CompHorner Performance]
+About 3 times slower than standard Horner, but 3 times faster than double-double arithmetic while achieving similar accuracy.
+\end{performancebox}
+
+\section{Root Finding with Newton's Method}
+
+\subsection{Condition Number for Root Finding}
+
+For a simple root $x$ of polynomial $p$:
+\begin{equation}
+\cond_{\text{root}}(p,x) = \frac{\tilde{p}(|x|)}{|x||p'(x)|}
+\end{equation}
+
+\subsection{Classic Newton's Method}
+
+Error bound:
+\begin{equation}
+\frac{|x_{i+1} - x|}{|x|} \approx \gamma_{2n} \cdot \cond_{\text{root}}(p,x)
+\end{equation}
+
+\subsection{Accurate Newton's Method}
+
+Using CompHorner for function evaluation:
+\begin{equation}
+\frac{|x_{i+1} - x|}{|x|} \approx u + \gamma_{2n}^2 \cdot \cond_{\text{root}}(p,x)
+\end{equation}
+
+\subsection{New Accurate Newton's Method}
+
+Using both CompHorner and CompHD (compensated Horner derivative):
+\begin{equation}
+\frac{|x_{i+1} - x|}{|x|} \approx Ku + D\gamma_{2n}^2 \cdot \cond_{\text{root}}(p,x)
+\end{equation}
+
+where $K$ and $D$ are small constants.
+
+\begin{successbox}[title=Best Possible Accuracy]
+This achieves the best possible accuracy, with both the residual and derivative computed accurately. The method maintains convergence even for extremely ill-conditioned root-finding problems (condition numbers up to $10^{30}$).
+\end{successbox}
+
+\section{Summary Tables}
+
+\subsection{Error Bounds Comparison}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Algorithm} & \textbf{Standard Error} & \textbf{Compensated Error} \\
+\midrule
+Summation & $\gamma_{n-1} \sum |p_i|$ & $u|s| + \gamma_{n-1}^2 S$ \\
+Dot Product & $\gamma_n |x|_1 |y|_1$ & $u|x \cdot y| + \gamma_n^2 |x|_1 |y|_1$ \\
+Horner & $\gamma_{2n} \cond(p,x) |p(x)|$ & $(u + \gamma_{2n}^2 \cond(p,x)) |p(x)|$ \\
+Newton (root) & $\gamma_{2n} \cond_{\text{root}}(p,x)$ & $u + \gamma_{2n}^2 \cond_{\text{root}}(p,x)$ \\
+\bottomrule
+\end{tabular}
+\caption{Comparison of error bounds for standard vs compensated algorithms}
+\end{table}
+
+\subsection{Accuracy Gain}
+
+The compensated algorithms typically improve accuracy by a factor of:
+\begin{equation}
+\text{Improvement factor} \approx \frac{\gamma_n}{u} = \frac{nu}{(1-nu)u} \approx n
+\end{equation}
+
+For $n = 1000$ and $u = 2^{-53}$:
+\begin{itemize}
+  \item Standard error: $\approx 1000u \approx 10^{-13}$
+  \item Compensated error: $\approx u \approx 10^{-16}$
+  \item Improvement: $\approx 1000\times$
+\end{itemize}
+
+\subsection{Cost vs Accuracy Trade-off}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Approach} & \textbf{Cost} & \textbf{Error} & \textbf{Efficiency} \\
+\midrule
+Standard (binary64) & 1$\times$ & $nu$ & Baseline \\
+Compensated & 3--4$\times$ & $u + n^2u^2$ & High \\
+Double-double & 10--20$\times$ & $u_{\text{dd}}$ & Medium \\
+Quad precision & 50--100$\times$ & $u_{\text{quad}}$ & Low \\
+\bottomrule
+\end{tabular}
+\caption{Performance and accuracy comparison of different approaches}
+\end{table}
+
+\begin{notebox}[title=Practical Recommendation]
+Compensated algorithms offer the best cost-accuracy trade-off when:
+\begin{itemize}
+  \item Condition number is $10^3$ to $10^{10}$
+  \item Standard precision is insufficient
+  \item Higher precision arithmetic is too expensive
+\end{itemize}
+\end{notebox}
+
+\section{Key Takeaways}
+
+\begin{enumerate}
+  \item \textbf{Error-Free Transformations} enable exact capture of rounding errors using only standard floating-point arithmetic.
+  
+  \item \textbf{Compensated algorithms} achieve near-optimal accuracy by:
+  \begin{itemize}
+    \item Using EFT to compute exact rounding errors
+    \item Accumulating and correcting for these errors
+    \item Maintaining the error term in a separate accumulator
+  \end{itemize}
+  
+  \item \textbf{Cost is reasonable}: 3--4$\times$ slowdown for $1/u$ accuracy improvement.
+  
+  \item \textbf{Hardware support} (FMA instruction) reduces cost dramatically for TwoProduct.
+  
+  \item \textbf{Applications}: Essential for ill-conditioned problems where standard algorithms fail but full multi-precision arithmetic is too expensive.
+  
+  \item \textbf{Limitation}: FastTwoSum requires round-to-nearest mode; directed rounding breaks error-free properties.
+  
+  \item \textbf{Theory}: The $\gamma_n$ term appears consistently in error analysis and characterizes error growth in recursive algorithms.
+\end{enumerate}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+\noindent\textit{ Slides summarized with Claude by Giulia Lionetti- Sorbonne Université}
+
+\end{document}
