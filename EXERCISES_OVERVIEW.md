@@ -20,12 +20,12 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Tutorial 2, Ex 2** — IEEE 754 single precision representations | Represent 13, 0.4375, −0.4375, 1+2⁻²⁴, 1+2⁻²⁴−2⁻²⁵, 1+2⁻²⁴+2⁻²⁵, 1/7, 2⁻¹³⁰ in binary32 | [tutorial_02.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/tutorial_02.pdf) |
-| ↳ Solved | Full step-by-step for all 8 numbers including subnormal 2⁻¹³⁰ | [tutorial_02_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/solutions/tutorial_02_solved.pdf) |
-| **Tutorial 1, Ex 5** — Double precision hex/binary | Read double precision via hex union cast, decompose x into E and m | [tutorial_01.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/tutorial_01.pdf) (p.4) |
-| ↳ Solved | Detailed IEEE 754 double precision bit extraction | [tutorial1_ex5_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/solutions/tutorial1_ex5_solved.pdf) |
-| **Tutorial 2, Ex 1** — Signed integer representations | Sign-magnitude, one's complement, two's complement for 19 and −19 | [tutorial_02.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/tutorial_02.pdf) |
-| ↳ Solved | All three methods compared | [tutorial_02_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/solutions/tutorial_02_solved.pdf) |
+| **Tutorial 2, Ex 2** — IEEE 754 single precision representations | Represent 13, 0.4375, −0.4375, 1+2⁻²⁴, 1+2⁻²⁴−2⁻²⁵, 1+2⁻²⁴+2⁻²⁵, 1/7, 2⁻¹³⁰ in binary32 | [tutorial_02.pdf](./Tutorials/tutorial_02.pdf) |
+| ↳ Solved | Full step-by-step for all 8 numbers including subnormal 2⁻¹³⁰ | [tutorial_02_solved.pdf](./Tutorials/solutions/tutorial_02_solved.pdf) |
+| **Tutorial 1, Ex 5** — Double precision hex/binary | Read double precision via hex union cast, decompose x into E and m | [tutorial_01.pdf](./Tutorials/tutorial_01.pdf) (p.4) |
+| ↳ Solved | Detailed IEEE 754 double precision bit extraction | [tutorial1_ex5_solved.pdf](./Tutorials/solutions/tutorial1_ex5_solved.pdf) |
+| **Tutorial 2, Ex 1** — Signed integer representations | Sign-magnitude, one's complement, two's complement for 19 and −19 | [tutorial_02.pdf](./Tutorials/tutorial_02.pdf) |
+| ↳ Solved | All three methods compared | [tutorial_02_solved.pdf](./Tutorials/solutions/tutorial_02_solved.pdf) |
 
 ---
 
@@ -45,8 +45,8 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Exam Ex 5** — Fixed-point arithmetic (6 pts) | Format (6,−4) properties; represent 9.3452, 0.03434, −2.18625 in 8-bit; compute errors; design fixed-point realization for `9.3452x + 0.03434y − 2.18625z` with 8×8→16 multiplier | [exam-CCA.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/exam-CCA.pdf) (p.3) |
-| ↳ Solved | Complete step-by-step for all 4 parts | [ex_5_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/solutions/ex_5_solved.pdf) |
+| **Exam Ex 5** — Fixed-point arithmetic (6 pts) | Format (6,−4) properties; represent 9.3452, 0.03434, −2.18625 in 8-bit; compute errors; design fixed-point realization for `9.3452x + 0.03434y − 2.18625z` with 8×8→16 multiplier | [exam-CCA.pdf](./Exam/exam-CCA.pdf) (p.3) |
+| ↳ Solved | Complete step-by-step for all 4 parts | [ex_5_solved.pdf](./Exam/solutions/ex_5_solved.pdf) |
 
 ---
 
@@ -65,12 +65,12 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Exam Ex 1** — fl(x × fl(1/x)) analysis (4 pts) | Show result is either 1 or 1−u for x ∈ [1,2) in double precision | [exam-CCA.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/exam-CCA.pdf) (p.1) |
-| ↳ Solved (+ variations) | Step-by-step error model application, 3 variations included | [ex_1_solved_and_some_variations.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/solutions/ex_1_solved_and_some_variations.pdf) |
-| **Exam Ex 2** — Absorption in recursive summation (4 pts) | Find possible values of `fl(Σxᵢ)` for {1,2,3,4,M,−M} with absorption | [exam-CCA.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/exam-CCA.pdf) (p.1) |
-| ↳ Solved (+ variations) | All permutation cases analyzed | [ex_2_solved_with_variations.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/solutions/ex_2_solved_with_variations.pdf) |
-| **Tutorial 2, Ex 2.2** — Product a⊗b in single precision | Compute fl(4097 × 8449) step by step with rounding | [tutorial_02.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/tutorial_02.pdf) |
-| ↳ Solved | Bit-level product and rounding analysis | [tutorial_02_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/solutions/tutorial_02_solved.pdf) |
+| **Exam Ex 1** — fl(x × fl(1/x)) analysis (4 pts) | Show result is either 1 or 1−u for x ∈ [1,2) in double precision | [exam-CCA.pdf](./Exam/exam-CCA.pdf) (p.1) |
+| ↳ Solved (+ variations) | Step-by-step error model application, 3 variations included | [ex_1_solved_and_some_variations.pdf](./Exam/solutions/ex_1_solved_and_some_variations.pdf) |
+| **Exam Ex 2** — Absorption in recursive summation (4 pts) | Find possible values of `fl(Σxᵢ)` for {1,2,3,4,M,−M} with absorption | [exam-CCA.pdf](./Exam/exam-CCA.pdf) (p.1) |
+| ↳ Solved (+ variations) | All permutation cases analyzed | [ex_2_solved_with_variations.pdf](./Exam/solutions/ex_2_solved_with_variations.pdf) |
+| **Tutorial 2, Ex 2.2** — Product a⊗b in single precision | Compute fl(4097 × 8449) step by step with rounding | [tutorial_02.pdf](./Tutorials/tutorial_02.pdf) |
+| ↳ Solved | Bit-level product and rounding analysis | [tutorial_02_solved.pdf](./Tutorials/solutions/tutorial_02_solved.pdf) |
 
 ---
 
@@ -88,10 +88,10 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Exam Ex 3** — FastTwoSum with directed rounding (4 pts) | Show `s+t = a+b` fails with rounding toward +∞; provide counterexample; prove `z = s−a` is exact | [exam-CCA.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/exam-CCA.pdf) (p.1) |
-| ↳ Solved (+ 5 variations) | Counterexamples for all directed rounding modes, full proofs | [ex_3_solved_with_variations.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/solutions/ex_3_solved_with_variations.pdf) |
-| **More Exercises — TwoProduct with directed rounding** | Same pattern as Ex 3 but for multiplication; counterexample + Sterbenz analysis | [twoproduct_exercise.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/more%20exercises/twoproduct_exercise.pdf) |
-| **Lab 1 code** — FastTwoSum, TwoSum, TwoProduct, Split | MATLAB implementations with test scripts | [Lab Code/LAB_1_Code/](Floating-Point-Arithmetic-and-Error-Analysis/Lab%20Code/LAB_1_Code/) |
+| **Exam Ex 3** — FastTwoSum with directed rounding (4 pts) | Show `s+t = a+b` fails with rounding toward +∞; provide counterexample; prove `z = s−a` is exact | [exam-CCA.pdf](./Exam/exam-CCA.pdf) (p.1) |
+| ↳ Solved (+ 5 variations) | Counterexamples for all directed rounding modes, full proofs | [ex_3_solved_with_variations.pdf](./Exam/solutions/ex_3_solved_with_variations.pdf) |
+| **More Exercises — TwoProduct with directed rounding** | Same pattern as Ex 3 but for multiplication; counterexample + Sterbenz analysis | [twoproduct_exercise.pdf](./Exam/more%20exercises/twoproduct_exercise.pdf) |
+| **Lab 1 code** — FastTwoSum, TwoSum, TwoProduct, Split | MATLAB implementations with test scripts | [Lab Code/LAB_1_Code/](./Lab%20Code/LAB_1_Code/) |
 
 ---
 
@@ -109,10 +109,10 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Exam Ex 7** — Mixed precision blocked summation (3 pts) | Draw tree for n=12, b₁=3, b₂=2; derive `f(n,b₁,b₂,u₁,u₂,u₃)` bound; find optimal b₁,b₂; assign fp64/32/16 to u₁,u₂,u₃ | [exam-CCA.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/exam-CCA.pdf) (p.4) |
-| ↳ Solved (+ variations) | Tree diagram, backward error derivation, optimal choices | [ex_7_solved_with_variations.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/solutions/ex_7_solved_with_variations.pdf) |
-| **Tutorial 3, Ex 1** — Summation condition number + backward stability | Prove cond(Σpᵢ); prove recursive summation backward-stable; bound relative error; redo for dot product | [tutorial_03.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/tutorial_03.pdf) |
-| ↳ Solved | Full proofs for summation and dot product | [tutorial_03_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/solutions/tutorial_03_solved.pdf) |
+| **Exam Ex 7** — Mixed precision blocked summation (3 pts) | Draw tree for n=12, b₁=3, b₂=2; derive `f(n,b₁,b₂,u₁,u₂,u₃)` bound; find optimal b₁,b₂; assign fp64/32/16 to u₁,u₂,u₃ | [exam-CCA.pdf](./Exam/exam-CCA.pdf) (p.4) |
+| ↳ Solved (+ variations) | Tree diagram, backward error derivation, optimal choices | [ex_7_solved_with_variations.pdf](./Exam/solutions/ex_7_solved_with_variations.pdf) |
+| **Tutorial 3, Ex 1** — Summation condition number + backward stability | Prove cond(Σpᵢ); prove recursive summation backward-stable; bound relative error; redo for dot product | [tutorial_03.pdf](./Tutorials/tutorial_03.pdf) |
+| ↳ Solved | Full proofs for summation and dot product | [tutorial_03_solved.pdf](./Tutorials/solutions/tutorial_03_solved.pdf) |
 
 ---
 
@@ -131,9 +131,9 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Exam Ex 4** — Stochastic arithmetic / CADNA analysis (4 pts) | Solve linear system AX=B; compare binary32 classic vs DSA results; identify cancellation instability; analyze binary64 improvement | [exam-CCA.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/exam-CCA.pdf) (p.2) |
-| ↳ Solved | Gaussian elimination trace, DSA output interpretation, instability explanation | [ex_4_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/solutions/ex_4_solved.pdf) |
-| **Lab 2 code** — CADNA programs | Gauss, Hilbert, Jacobi, logistic, Muller, Newton, Rump examples with `_cad` versions | [Lab Code/LAB_2_Code/](Floating-Point-Arithmetic-and-Error-Analysis/Lab%20Code/LAB_2_Code/) |
+| **Exam Ex 4** — Stochastic arithmetic / CADNA analysis (4 pts) | Solve linear system AX=B; compare binary32 classic vs DSA results; identify cancellation instability; analyze binary64 improvement | [exam-CCA.pdf](./Exam/exam-CCA.pdf) (p.2) |
+| ↳ Solved | Gaussian elimination trace, DSA output interpretation, instability explanation | [ex_4_solved.pdf](./Exam/solutions/ex_4_solved.pdf) |
+| **Lab 2 code** — CADNA programs | Gauss, Hilbert, Jacobi, logistic, Muller, Newton, Rump examples with `_cad` versions | [Lab Code/LAB_2_Code/](./Lab%20Code/LAB_2_Code/) |
 
 ---
 
@@ -151,8 +151,8 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Exam Ex 6** — Rounding error in matrix-vector products (3 pts) | Analyze backward error plot for fp16 y=Ax comparing RTN, RZ, SR; explain growth rates | [exam-CCA.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/exam-CCA.pdf) (p.3) |
-| ↳ Solved | Full plot analysis with theoretical justification | [ex_6_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/solutions/ex_6_solved.pdf) |
+| **Exam Ex 6** — Rounding error in matrix-vector products (3 pts) | Analyze backward error plot for fp16 y=Ax comparing RTN, RZ, SR; explain growth rates | [exam-CCA.pdf](./Exam/exam-CCA.pdf) (p.3) |
+| ↳ Solved | Full plot analysis with theoretical justification | [ex_6_solved.pdf](./Exam/solutions/ex_6_solved.pdf) |
 
 ---
 
@@ -170,8 +170,8 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Exam Ex 8** — Mixed precision iterative refinement (2 pts) | Complete table: 7 precision configurations × {1, 10} iterations for κ(A)=10³ | [exam-CCA.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/exam-CCA.pdf) (p.4–5) |
-| ↳ Solved (+ variations) | Completed table with reasoning for each cell | [ex_8_solved_with_variations.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/solutions/ex_8_solved_with_variations.pdf) |
+| **Exam Ex 8** — Mixed precision iterative refinement (2 pts) | Complete table: 7 precision configurations × {1, 10} iterations for κ(A)=10³ | [exam-CCA.pdf](./Exam/exam-CCA.pdf) (p.4–5) |
+| ↳ Solved (+ variations) | Completed table with reasoning for each cell | [ex_8_solved_with_variations.pdf](./Exam/solutions/ex_8_solved_with_variations.pdf) |
 
 ---
 
@@ -183,13 +183,13 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **Tutorial 3, Ex 1** — Summation & dot product conditioning + stability | Prove condition number formula; prove backward stability; derive error bounds | [tutorial_03.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/tutorial_03.pdf) |
-| ↳ Solved | | [tutorial_03_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/solutions/tutorial_03_solved.pdf) |
-| **Tutorial 3, Ex 2** — Polynomial evaluation conditioning | Condition number of Horner's method | [tutorial_03.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/tutorial_03.pdf) |
-| ↳ Solved | | [tutorial_03_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/solutions/tutorial_03_solved.pdf) |
-| **Tutorial 3, Ex 4** — Conditioning of matrix inverse | Prove κ(A) = ‖A‖·‖A⁻¹‖; distance to singularity; singular value connection | [tutorial_03.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/tutorial_03.pdf) (p.2) |
-| ↳ Solved | | [tutorial_03_solved.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Tutorials/solutions/tutorial_03_solved.pdf) |
-| **More Exercises — Multiple roots** | Interval arithmetic verification of ill-conditioned polynomial roots | [multiple roots problem.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/more%20exercises/Numerical%20Example%20of%20the%20multiple%20roots%20problem.pdf) |
+| **Tutorial 3, Ex 1** — Summation & dot product conditioning + stability | Prove condition number formula; prove backward stability; derive error bounds | [tutorial_03.pdf](./Tutorials/tutorial_03.pdf) |
+| ↳ Solved | | [tutorial_03_solved.pdf](./Tutorials/solutions/tutorial_03_solved.pdf) |
+| **Tutorial 3, Ex 2** — Polynomial evaluation conditioning | Condition number of Horner's method | [tutorial_03.pdf](./Tutorials/tutorial_03.pdf) |
+| ↳ Solved | | [tutorial_03_solved.pdf](./Tutorials/solutions/tutorial_03_solved.pdf) |
+| **Tutorial 3, Ex 4** — Conditioning of matrix inverse | Prove κ(A) = ‖A‖·‖A⁻¹‖; distance to singularity; singular value connection | [tutorial_03.pdf](./Tutorials/tutorial_03.pdf) (p.2) |
+| ↳ Solved | | [tutorial_03_solved.pdf](./Tutorials/solutions/tutorial_03_solved.pdf) |
+| **More Exercises — Multiple roots** | Interval arithmetic verification of ill-conditioned polynomial roots | [multiple roots problem.pdf](./Exam/more%20exercises/Numerical%20Example%20of%20the%20multiple%20roots%20problem.pdf) |
 
 ---
 
@@ -208,8 +208,8 @@
 
 | Exercise | What it asks | Link |
 |---|---|---|
-| **More Exercises — Multiple roots** | Apply interval Newton to verify roots of degree-7 polynomial; Krawczyk operator | [multiple roots problem.pdf](Floating-Point-Arithmetic-and-Error-Analysis/Exam/more%20exercises/Numerical%20Example%20of%20the%20multiple%20roots%20problem.pdf) |
-| **Lab 3 code** — Intlab exercises | MATLAB interval arithmetic with INTLAB | [Lab Code/LAB_3_Code/](Floating-Point-Arithmetic-and-Error-Analysis/Lab%20Code/LAB_3_Code/) |
+| **More Exercises — Multiple roots** | Apply interval Newton to verify roots of degree-7 polynomial; Krawczyk operator | [multiple roots problem.pdf](./Exam/more%20exercises/Numerical%20Example%20of%20the%20multiple%20roots%20problem.pdf) |
+| **Lab 3 code** — Intlab exercises | MATLAB interval arithmetic with INTLAB | [Lab Code/LAB_3_Code/](./Lab%20Code/LAB_3_Code/) |
 
 ---
 
