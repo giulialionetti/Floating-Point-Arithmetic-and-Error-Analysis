@@ -1,9 +1,3 @@
-### Important Disclaimer
+### Floating Point Arithmetic and Error Analysis 
 
-Please, if you have time, make sure to double check the solutions as they might not be 100% accurate.
-I want to be immune to the Dunning-Kruger effect today.
-
-use these notes, summaries and solutions as you wish but don't come to me if you get less than 8 out 20 at the exam.
-
-
-Giulia Out 
+contains but is not limited to: slides of the lectures, past Exam with solutions, materials related to the paper presentation and code used for the continuos assessments. 
